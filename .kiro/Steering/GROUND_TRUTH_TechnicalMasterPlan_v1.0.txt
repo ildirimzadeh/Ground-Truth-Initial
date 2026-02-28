@@ -1,0 +1,725 @@
+
+
+# TECHNICAL MASTER PLAN — GROUND TRUTH
+
+---
+
+## PART I — SYSTEM DEPENDENCY MAP
+
+The following map governs all build sequencing. An arrow **A ──► B** means **"A depends on B"** — System A cannot function unless System B is operational. Systems are grouped into build layers; no system in a higher layer may be constructed before every system it depends on in a lower layer is complete and tested.
+
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LAYER 0 — BEDROCK (Zero dependencies. Built first. Never rewritten.)   ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                         ║
+║  ┌─────────────────────┐  ┌──────────────────┐  ┌────────────────────┐  ║
+║  │  GlobalStateManager │  │    Event Bus      │  │ JSON Data Pipeline │  ║
+║  │  (Flag Dictionary)  │  │  (SO Channels)    │  │ (Parser + Models)  │  ║
+║  └─────────────────────┘  └──────────────────┘  └────────────────────┘  ║
+║                                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+          ▲    ▲    ▲              ▲   ▲   ▲              ▲   ▲   ▲
+          │    │    │              │   │   │              │   │   │
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LAYER 1 — CORE MECHANICS (The annotation engine)                       ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                         ║
+║  ┌──────────────────┐  ┌──────────────┐  ┌────────────┐                 ║
+║  │ BBox Drawing Tool│  │IoU Evaluator │  │Timer System │                 ║
+║  │ (Input ──► Rects)│  │ (Pure Math)  │  │(Countdown) │                 ║
+║  └────────┬─────────┘  └──────┬───────┘  └─────┬──────┘                 ║
+║           │                   │                 │                        ║
+║           │     ┌─────────────┴─────────────────┘                       ║
+║           │     │                                                       ║
+║           ▼     ▼                                                       ║
+║  ┌────────────────────────┐       ┌──────────────────┐                  ║
+║  │  Submission Pipeline   │──────►│  Economy / Wallet │                  ║
+║  │  (Evaluates + Routes)  │       │  Manager          │                  ║
+║  └────────────────────────┘       └──────────────────┘                  ║
+║                                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+          ▲              ▲                    ▲
+          │              │                    │
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LAYER 2 — SESSION STRUCTURE (Shift assembly + day progression)         ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                         ║
+║  ┌──────────────────────┐    ┌───────────────────┐                      ║
+║  │  Campaign Manifest   │◄───│   Level Manager   │                      ║
+║  │  System              │    │  (Shift Assembly + │                      ║
+║  │  (Prerequisite Pool) │    │   Pacing Curve)    │                      ║
+║  └──────────────────────┘    └─────────┬─────────┘                      ║
+║                                        │                                ║
+║                                        ▼                                ║
+║                              ┌───────────────────┐                      ║
+║                              │  Day Cycle Manager │                      ║
+║                              │  (Phase + Day Counter)│                   ║
+║                              └───────────────────┘                      ║
+║                                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+          ▲                      ▲               ▲
+          │                      │               │
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LAYER 3 — OS ECOSYSTEM (The desktop between shifts)                    ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                         ║
+║  ┌─────────────────────────────────────────────────────────────────┐     ║
+║  │                    OS Desktop Shell                             │     ║
+║  │  ┌──────────────┐  ┌──────────┐  ┌────────────┐  ┌─────────┐  │     ║
+║  │  │Inbox Manager │  │ OS Store │  │ File Manager│  │Power Btn│  │     ║
+║  │  └──────────────┘  └──────────┘  └────────────┘  └─────────┘  │     ║
+║  └─────────────────────────────────────────────────────────────────┘     ║
+║                                                                         ║
+║  ┌────────────────┐                                                     ║
+║  │  Save System   │  (Serializes Layer 0–3 state)                       ║
+║  └────────────────┘                                                     ║
+║                                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+  ════════════════════ VERTICAL SLICE GATE ════════════════════
+  (Everything below this line is built ONLY after the gate passes)
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LAYER 4 — WORLD SIMULATION (Drone feed dynamics)                       ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                         ║
+║  ┌─────────────────────┐  ┌──────────────────┐  ┌───────────────────┐   ║
+║  │ Drone Altitude Mgr  │  │ NPC State Machine│  │ Paperdoll System  │   ║
+║  │ (Zoom/Noise/Thermal)│  │ (Utility AI)     │  │ (SpriteResolver)  │   ║
+║  └──────────┬──────────┘  └────────┬─────────┘  └────────┬──────────┘   ║
+║             │                      │                      │              ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+              ▲                      ▲                      ▲
+              │                      │                      │
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LAYER 5 — ENTITY & TACTICAL BRIDGE                                     ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                         ║
+║  ┌────────────────────┐  ┌──────────────────────┐  ┌────────────────┐   ║
+║  │Entity Interactions │  │ OS ──► World Tactical│  │TransientNPCData│   ║
+║  │(Driver/Driven)     │  │ Bridge (Events)      │  │(Cross-Level SO)│   ║
+║  └────────────────────┘  └──────────────────────┘  └────────────────┘   ║
+║                                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+              ▲                      ▲                      ▲
+              │                      │                      │
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LAYER 6 — FEEDBACK & ATMOSPHERE                                        ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                         ║
+║  ┌──────────────────┐  ┌────────────────────┐  ┌──────────────────────┐ ║
+║  │Audio/Intel System│  │Room Visual Evolve  │  │ CRT Post-Processing │ ║
+║  │(SMBs + Panning)  │  │(State-Driven Swap) │  │ & Visual Juice      │ ║
+║  └──────────────────┘  └────────────────────┘  └──────────────────────┘ ║
+║                                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LAYER 7 — PRESSURE & NARRATIVE SYSTEMS                                 ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                         ║
+║  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────────────┐ ║
+║  │Wage Suppression  │  │ Debt Spiral /    │  │Emotional Sink Modifiers│ ║
+║  │(Accuracy Penalty)│  │ Loan System      │  │(Flag ──► Timer/Payout) │ ║
+║  └──────────────────┘  └──────────────────┘  └────────────────────────┘ ║
+║                                                                         ║
+║                     ┌──────────────────────┐                            ║
+║                     │ Hacker Intrusions /  │                            ║
+║                     │ Desktop Narrative    │                            ║
+║                     │ Events              │                            ║
+║                     └──────────────────────┘                            ║
+║                                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+                             ▲
+                             │
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LAYER 8 — TERMINAL (Depends on everything. Built last.)                ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                         ║
+║  ┌──────────────────┐  ┌──────────────────────────────────────────────┐ ║
+║  │Day 29 Bottleneck │  │ Ending System (3 branches)                  │ ║
+║  │(Evaluation Gate) │──►│  • Ending 1: Corporate (Canvas disable)    │ ║
+║  └──────────────────┘  │  • Ending 2: Rebel (JSON inversion)        │ ║
+║                        │  • Ending 3: Debt (Phantom cursor + quit)  │ ║
+║                        └──────────────────────────────────────────────┘ ║
+║                                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+```
+
+### Specific Dependency List (Exhaustive)
+
+| System | Depends On |
+|:---|:---|
+| **Event Bus** | Nothing |
+| **GlobalStateManager** | Nothing |
+| **JSON Data Pipeline** | Nothing |
+| **IoU Evaluator** | Nothing |
+| **BBox Drawing Tool** | Nothing (Unity UI input only) |
+| **Timer System** | Event Bus, GlobalStateManager (reads modifiers) |
+| **Economy / Wallet Manager** | Event Bus, GlobalStateManager |
+| **Submission Pipeline** | IoU Evaluator, BBox Drawing Tool, Timer System, Economy Manager, GlobalStateManager, Event Bus |
+| **Campaign Manifest System** | JSON Data Pipeline, GlobalStateManager |
+| **Level Manager** | JSON Data Pipeline, Campaign Manifest, Submission Pipeline, Timer System, GlobalStateManager, Event Bus |
+| **Day Cycle Manager** | Level Manager, Economy Manager, GlobalStateManager, Event Bus |
+| **OS Desktop Shell** | Day Cycle Manager, Event Bus |
+| **Inbox Manager** | JSON Data Pipeline, GlobalStateManager, Day Cycle Manager, OS Desktop Shell |
+| **OS Store** | Economy Manager, GlobalStateManager, OS Desktop Shell |
+| **Save System** | GlobalStateManager, Economy Manager, Day Cycle Manager, Inbox Manager |
+| **Drone Altitude Manager** | Event Bus |
+| **NPC State Machine** | Event Bus, Drone Altitude Manager |
+| **Paperdoll System** | JSON Data Pipeline (category/label data) |
+| **Entity Interactions** | NPC State Machine, Paperdoll System, Event Bus |
+| **OS→World Tactical Bridge** | Event Bus, OS Desktop Shell, NPC State Machine |
+| **Transient NPC Data** | Level Manager (triggers read/write at level boundaries) |
+| **Audio / Intel System** | Drone Altitude Manager, NPC State Machine, Event Bus |
+| **Room Visual Evolution** | GlobalStateManager, Economy Manager |
+| **CRT Post-Processing** | Nothing (visual layer only) |
+| **Wage Suppression** | Level Manager (shift accuracy), Economy Manager, Inbox Manager |
+| **Debt Spiral / Loan System** | Economy Manager, Day Cycle Manager, GlobalStateManager |
+| **Emotional Sink Modifiers** | GlobalStateManager, Timer System, Level Manager |
+| **Hacker Intrusion Events** | OS Desktop Shell, GlobalStateManager, Event Bus |
+| **Day 29 Bottleneck** | GlobalStateManager, Inbox Manager, OS Store, Day Cycle Manager |
+| **Ending System** | Day 29 Bottleneck, Level Manager, OS Desktop Shell, CRT Post-Processing |
+
+---
+
+## PART II — DATA CONTRACTS
+
+Every system below is defined by what data it accepts and what data it emits. These contracts are **binding** — any system built must conform to these interfaces exactly, or every downstream consumer will require refactoring.
+
+---
+
+### Contract 1: GlobalStateManager
+
+| Direction | Data | Format |
+|:---|:---|:---|
+| **Receives** | A flag key and integer value | `SetFlag(string key, int value)` |
+| **Receives** | A flag key and integer delta | `ModifyFlag(string key, int delta)` |
+| **Emits** | An integer value for a given key (returns 0 if absent) | `GetFlag(string key) → int` |
+| **Emits** | The entire flag dictionary (for serialization) | `GetAllFlags() → Dictionary<string, int>` |
+| **Receives** | A complete flag dictionary (for deserialization) | `LoadAllFlags(Dictionary<string, int>)` |
+
+**Canonical flag keys** (non-exhaustive; all authored in JSON, never hardcoded in game logic except these structural ones):
+
+| Key | Type | Set By | Read By |
+|:---|:---|:---|:---|
+| `Corporate_Trust` | int | Submission Pipeline, Inbox choices, Level outcomes | Day 29 Bottleneck, Inbox prerequisites, Room Evolution |
+| `Rebel_Sympathy` | int | Submission Pipeline, Inbox choices, Level outcomes | Day 29 Bottleneck, Inbox prerequisites, Room Evolution |
+| `current_day` | int | Day Cycle Manager | Campaign Manifest, Inbox Manager, all prerequisite checks |
+| `base_payout_modifier` | int (cents) | Wage Suppression | Level Manager (applied to LevelData.base_payout) |
+| `timer_modifier_ms` | int (milliseconds) | Emotional Sink Modifiers, OS Store | Timer System |
+| `iou_modifier_hundredths` | int (e.g., -10 = -0.10) | OS Store | Submission Pipeline (applied to minimum_iou) |
+| `loan_balance_cents` | int | Debt Spiral | Economy Manager, Day Cycle Manager |
+| `ending_condition` | int (0=unset, 1=A, 2=B, 3=C) | Day 29 Bottleneck | Ending System, Level Manager (Day 30) |
+
+---
+
+### Contract 2: Event Bus (ScriptableObject Channels)
+
+Each channel is a distinct ScriptableObject asset. Publishers call `Raise()`. Listeners subscribe/unsubscribe in `OnEnable()`/`OnDisable()`.
+
+| Channel Asset | Payload | Publishers | Listeners |
+|:---|:---|:---|:---|
+| `OnTimerTick` | `float timeRemaining` | Timer System | Annotation UI, Audio feedback |
+| `OnTimerExpired` | `void` | Timer System | Submission Pipeline, Level Manager |
+| `OnSubmissionEvaluated` | `SubmissionResult` | Submission Pipeline | Level Manager, Economy Manager, UI feedback |
+| `OnBalanceChanged` | `float newBalance` | Economy Manager | OS Desktop Shell (wallet display), Debt Spiral |
+| `OnDayStarted` | `int dayNumber` | Day Cycle Manager | Inbox Manager, Campaign Manifest, Room Evolution |
+| `OnPhaseChanged` | `GamePhase enum` | Day Cycle Manager | OS Desktop Shell, Level Manager |
+| `OnLevelLoaded` | `LevelData` | Level Manager | Timer System, Annotation UI, Drone Altitude Mgr, NPC Spawner |
+| `OnShiftComplete` | `ShiftSummary` | Level Manager | Receipt UI, Wage Suppression, Day Cycle Manager |
+| `OnAltitudeChanged` | `float normalizedZoom, ViewMode` | Drone Altitude Mgr | NPC State Machine, Audio/Intel, Visual layer |
+| `OnTargetPanicked` | `void` | Drone Altitude Mgr | All NPC State Machines |
+| `OnTacticalAction` | `TacticalAction enum + data` | OS Desktop Shell (chat buttons) | NPC State Machines, World Manager |
+| `OnNPCEscaped` | `string npcID` | NPC State Machine | Level Manager, TransientNPCData writer |
+| `OnDebtThresholdCrossed` | `void` | Economy Manager | Debt Spiral / Loan System |
+
+---
+
+### Contract 3: JSON Data Pipeline — Data Models
+
+**LevelData:**
+```
+level_id              : string
+image_file            : string (asset path)
+time_limit_seconds    : float
+base_payout           : float
+penalty_deduction     : float
+ground_truth_targets  : List<GroundTruthTarget>
+branching_logic       : BranchingLogic
+prerequisites         : Dictionary<string, int>  (nullable)
+escape_resolution     : EscapeResolution          (nullable)
+```
+
+**GroundTruthTarget:**
+```
+target_id       : string
+required_tag    : string (enum: "Combatant", "Non-Combatant", "Structural Hazard", "High-Value Target")
+bbox            : Rect {x, y, width, height}  (pixel coordinates)
+minimum_iou     : float (0.0–1.0)
+```
+
+**BranchingLogic:**
+```
+on_success      : {next_level_id: string, ui_feedback_text: string, flag_changes: Dict<string,int>}
+on_failure      : {next_level_id: string, ui_feedback_text: string, flag_changes: Dict<string,int>}
+on_failure_fatal: {next_level_id: string, ui_feedback_text: string, flag_changes: Dict<string,int>}  (nullable)
+on_escape       : EscapeResolution  (nullable)
+```
+
+**EscapeResolution:**
+```
+is_fatal            : bool
+next_level_id       : string
+financial_impact    : float
+faction_influence   : Dictionary<string, int>
+ui_subtitle         : string
+```
+
+**EmailData:**
+```
+thread_id   : string
+sender      : string
+subject     : string
+body        : string
+choices     : List<EmailChoice>
+```
+
+**EmailChoice:**
+```
+text            : string
+set_flags       : Dictionary<string, int>
+next_thread_id  : string
+delay_days      : int
+```
+
+**DayManifest:**
+```
+day_number          : int
+filler_count        : int
+story_event_ids     : List<string>
+mandatory_event_id  : string  (nullable — used for Day 29/30 forced events)
+gig_offers          : List<GigOffer>
+```
+
+**GigOffer:**
+```
+gig_id          : string
+display_name    : string
+image_count     : int
+base_payout     : float
+risk_warning    : string
+story_event_ids : List<string>
+```
+
+---
+
+### Contract 4: Submission Pipeline
+
+| Direction | Data | Format |
+|:---|:---|:---|
+| **Receives** | Player-drawn boxes with tags | `List<PlayerBox>` — each: `{Rect bounds, string tag, float submitTime}` |
+| **Receives** | Current level data | `LevelData` (from Level Manager) |
+| **Receives** | Time remaining at submission | `float` (from Timer System) |
+| **Emits** | Full evaluation result | `SubmissionResult` (see below) |
+
+**SubmissionResult:**
+```
+matched_targets     : List<{target_id, iou_score}>
+false_positives     : int
+missed_targets      : List<target_id>
+is_sabotage         : bool    (IoU == 0 AND timeRemaining > 2.0)
+financial_delta     : float   (net payout after bonuses and penalties)
+flag_changes        : Dictionary<string, int>  (from branching_logic)
+next_level_id       : string
+ui_feedback_text    : string
+time_bonus_mult     : float   (based on time-decay curve)
+```
+
+**Sabotage Detection Rule:** If any `PlayerBox` has `IoU == 0.0` against all ground truth targets AND `timeRemaining > 2.0s`, the `is_sabotage` flag is `true`. This triggers the `on_failure` branch but with rebel-favorable flag changes.
+
+---
+
+### Contract 5: Economy / Wallet Manager
+
+| Direction | Data | Format |
+|:---|:---|:---|
+| **Receives** | Balance adjustment with audit reason | `AdjustBalance(float delta, string reason)` |
+| **Receives** | Daily expense deduction trigger | `DeductDailyExpenses()` — reads expense values from GlobalStateManager |
+| **Emits** | Current balance | `float currentBalance` |
+| **Emits** | Full financial state (for save/receipt) | `EconomyState {balance, loanBalance, dailyExpenses, totalEarned, totalLost}` |
+| **Emits via Event Bus** | Balance changed notification | `OnBalanceChanged(float)` |
+| **Emits via Event Bus** | Debt threshold crossed | `OnDebtThresholdCrossed()` |
+
+---
+
+### Contract 6: Level Manager
+
+| Direction | Data | Format |
+|:---|:---|:---|
+| **Receives** | Day manifest | `DayManifest` (from Campaign Manifest System) |
+| **Receives** | Pacing template | `string[] pacingCurve` (e.g., `["F","F","F","H","F",...]`) |
+| **Receives** | Submission result for current level | `SubmissionResult` (determines next level) |
+| **Emits** | Assembled shift queue | `List<LevelData>` (ordered, 20 entries) |
+| **Emits** | Currently active level | `LevelData currentLevel` |
+| **Emits via Event Bus** | Level loaded | `OnLevelLoaded(LevelData)` |
+| **Emits via Event Bus** | Shift complete | `OnShiftComplete(ShiftSummary)` |
+
+**ShiftSummary:**
+```
+total_levels    : int
+success_count   : int
+accuracy        : float (0.0–1.0)
+total_earnings  : float
+total_penalties : float
+sabotage_count  : int
+```
+
+---
+
+### Contract 7: Day Cycle Manager
+
+| Direction | Data | Format |
+|:---|:---|:---|
+| **Receives** | Player action: "Accept Gig" | Triggers shift start |
+| **Receives** | Player action: "Power Button" | Triggers end-of-day |
+| **Receives** | Shift complete signal | `OnShiftComplete` event |
+| **Emits** | Current day number | `int currentDay` |
+| **Emits** | Current game phase | `GamePhase {OS_BOOT, INBOX, SHIFT_ACTIVE, RECEIPT, OS_DESKTOP, DAY_END}` |
+| **Emits via Event Bus** | Day started | `OnDayStarted(int)` |
+| **Emits via Event Bus** | Phase changed | `OnPhaseChanged(GamePhase)` |
+
+---
+
+### Contract 8: Inbox Manager
+
+| Direction | Data | Format |
+|:---|:---|:---|
+| **Receives** | Day started signal | `OnDayStarted(int)` |
+| **Receives** | Player choice on an email | `{thread_id, choice_index}` |
+| **Emits** | Today's inbox contents | `List<EmailData>` |
+| **Writes** | Flag changes from player choice | Via `GlobalStateManager.SetFlag()` |
+| **Writes** | Queued future emails | Internal pending list: `{thread_id, deliver_on_day}` |
+
+**Internal State (must be serializable for save):**
+```
+pending_emails  : List<{thread_id: string, deliver_on_day: int}>
+sent_thread_ids : HashSet<string>  (prevents re-delivery)
+```
+
+---
+
+### Contract 9: Drone Altitude Manager
+
+| Direction | Data | Format |
+|:---|:---|:---|
+| **Receives** | Scroll wheel input | Raw input delta |
+| **Emits** | Current altitude | `float orthographicSize` |
+| **Emits** | Normalized zoom | `float 0.0 (high/safe) to 1.0 (low/danger)` |
+| **Emits** | Suspicion meter | `float 0–100` |
+| **Emits** | View mode | `ViewMode {THERMAL, OPTICAL}` — switches at threshold |
+| **Emits via Event Bus** | Altitude changed | `OnAltitudeChanged(float normalizedZoom, ViewMode)` |
+| **Emits via Event Bus** | Target panicked | `OnTargetPanicked()` (when suspicion ≥ 100) |
+
+---
+
+### Contract 10: NPC State Machine
+
+| Direction | Data | Format |
+|:---|:---|:---|
+| **Receives** | Tactical commands | `OnTacticalAction` event (flashbang, bribe, etc.) |
+| **Receives** | Panic alert | `OnTargetPanicked` event |
+| **Receives** | Spawn configuration | Category/label strings for Paperdoll + behavior params from LevelData |
+| **Emits** | Current state | `NPCState enum {Idle, Patrol, Seek, Standoff, Flee, Stunned, Grappled, Execute, Shocked, Escaped}` |
+| **Emits** | Animation triggers | String keys to Animator |
+| **Emits via Event Bus** | NPC escaped viewport | `OnNPCEscaped(string npcID)` |
+| **Writes** | Snapshot on escape | `TransientNPCData` ScriptableObject asset |
+
+---
+
+### Contract 11: Transient NPC Data (ScriptableObject Asset)
+
+| Field | Type | Written By | Read By |
+|:---|:---|:---|:---|
+| `npcID` | string | NPC on escape | Next level's NPC spawner |
+| `factionID` | string | NPC on escape | Next level's NPC spawner |
+| `hatCategory` | string | NPC on escape | Paperdoll System on spawn |
+| `weaponCategory` | string | NPC on escape | Paperdoll System on spawn |
+| `currentHealth` | float | NPC on escape | NPC State Machine on spawn |
+| `isFleeing` | bool | NPC on escape | NPC State Machine on spawn |
+
+---
+
+### Contract 12: Save System
+
+**Serialized Payload:**
+```
+global_flags        : Dictionary<string, int>    (from GlobalStateManager)
+economy_state       : EconomyState               (from Economy Manager)
+current_day         : int                        (from Day Cycle Manager)
+pending_emails      : List<{thread_id, day}>     (from Inbox Manager)
+sent_thread_ids     : HashSet<string>            (from Inbox Manager)
+purchased_items     : List<string>               (from OS Store)
+```
+
+The Save System reads this composite from all source systems on save and distributes it back on load. No system serializes itself — the Save System owns all persistence.
+
+---
+
+## PART III — THE VERTICAL SLICE GATE
+
+**Definition:** The Vertical Slice Gate is the precise moment at which the core loop is proven stable, data-driven, and scalable. **No narrative content, no commissioned art, no audio assets, and no world simulation features may be authored until this gate is passed.**
+
+### What Must Exist and Work at the Vertical Slice Gate:
+
+At the completion of this gate, a playtester — using only placeholder art (colored rectangles), placeholder text, and no audio — can perform the following sequence without encountering a hardcoded value, a broken transition, or a manual intervention:
+
+1. **The game boots to the OS Desktop.** The desktop shell renders with a taskbar, wallet display, inbox icon, store icon, and hardware power button.
+
+2. **The playtester opens the Inbox and reads an email.** The email was loaded entirely from a JSON file. It presents two choices. The playtester selects one. The choice writes a flag to the GlobalStateManager (verifiable in debug output).
+
+3. **The playtester accepts a Gig Offer.** The screen transitions to the annotation software. The desktop UI is locked. A shift queue of exactly 5 levels has been assembled: 4 Filler, 1 High-Stakes, ordered by the pacing curve algorithm. All 5 levels were loaded from separate JSON files. No level data is hardcoded.
+
+4. **For each level, the playtester:**
+   - Sees a placeholder image displayed correctly.
+   - Sees a countdown timer start at the JSON-specified duration (modified by any active GlobalStateManager flag, such as a cooling gel purchase).
+   - Draws one or more bounding boxes using click-and-drag.
+   - Assigns a tag via keyboard shortcut or dropdown.
+   - Hits Submit.
+
+5. **The IoU evaluation runs correctly.** A correct box + correct tag loads the `on_success` next level. An incorrect box or tag loads the `on_failure` next level. A timeout loads the failure branch. A deliberate zero-overlap sabotage box submitted with >2s remaining is flagged as sabotage and applies distinct flag changes.
+
+6. **The Economy responds correctly.** The wallet display increases on success (with time-decay bonus visible), decreases on failure. Financial deltas match the JSON-specified values exactly.
+
+7. **The shift ends.** A receipt screen displays: total levels, accuracy, total earned, total lost. The desktop unlocks.
+
+8. **The playtester visits the Store.** They purchase one item (e.g., Cooling Gel). The wallet decreases. The item's effect is written to GlobalStateManager.
+
+9. **The playtester clicks the power button.** Daily rent is deducted. The Day counter increments. The game auto-saves. The game reboots to Day 2.
+
+10. **On Day 2, the consequence is visible.** The email choice from Day 1 has caused a different email to appear in the inbox (via `delay_days` and `next_thread_id`). AND/OR: the flag set on Day 1 has caused a different story level to appear in today's shift (via the prerequisite system in the Campaign Manifest). The Cooling Gel purchase has measurably increased the timer duration for all levels.
+
+### What This Proves:
+
+- The JSON Data Pipeline correctly deserializes all three data types (levels, emails, manifests).
+- The GlobalStateManager is the single source of truth, and every system reads/writes through it.
+- The Event Bus correctly decouples the Submission Pipeline from the Economy, the Timer from the UI, and the Day Cycle from the Inbox.
+- The Level Manager assembles queues dynamically from filtered pools — not from hardcoded sequences.
+- The prerequisite system works: a Day 1 flag change produces a Day 2 content change.
+- The economy creates real pressure: income is insufficient to trivially cover expenses.
+- The Save System persists all state across a simulated session boundary.
+- **Every system above the Vertical Slice Gate line can accept unlimited new JSON content files without any code changes.**
+
+---
+
+## PART IV — GOAL-BASED MILESTONES
+
+---
+
+### MILESTONE 1: THE DATA SPINE
+
+**Goal State:** At the end of this milestone, three foundational systems exist and are fully operational: the GlobalStateManager (persistent flag dictionary), the Event Bus (ScriptableObject-based publish/subscribe channels), and the JSON Data Pipeline (parser that converts JSON files into typed data objects). A test harness can: set a flag, read it back, raise an event on a channel and confirm a listener received it, and parse a sample Level JSON, Email JSON, and DayManifest JSON into their respective typed data objects with all fields populated correctly. No game is visible to the player. This is invisible infrastructure.
+
+**What Exists:**
+- GlobalStateManager singleton with `SetFlag`, `ModifyFlag`, `GetFlag`, `GetAllFlags`, `LoadAllFlags`.
+- At least 6 ScriptableObject event channel types created as reusable assets: `VoidEventChannel`, `IntEventChannel`, `FloatEventChannel`, `StringEventChannel`, `SubmissionResultChannel`, `LevelDataChannel`. Each supports `Raise(T)` and `OnEventRaised += callback`.
+- JSON deserializer that maps to the exact data models defined in Part II, Contract 3 (LevelData, GroundTruthTarget, BranchingLogic, EscapeResolution, EmailData, EmailChoice, DayManifest, GigOffer).
+- At least 3 sample JSON files (one of each type) that parse without error.
+- A debug console or test scene that exercises all three systems in isolation.
+
+**What Does NOT Exist Yet:** Any UI, any player interaction, any visual output.
+
+---
+
+### MILESTONE 2: THE ANNOTATION ENGINE
+
+**Goal State:** At the end of this milestone, the game can load a single level from a JSON file, display its image, start a countdown timer, accept a player-drawn bounding box with a tag, evaluate the box against the JSON ground truth using IoU math, and display whether the submission was a match or a miss. The evaluation result is numerically correct (IoU percentage verifiable in debug output). This runs in a minimal test scene — no desktop OS, no economy, no transitions.
+
+**What Exists:**
+- A 2D UI canvas with an image container that displays the `image_file` specified in a LevelData object.
+- A bounding box drawing tool: `OnPointerDown` sets one corner, `OnDrag` scales the rectangle in real-time, `OnPointerUp` finalizes the box. The drawn box is visually crisp (high-contrast color, uncapped responsiveness, zero input smoothing).
+- A tag assignment mechanism (keyboard shortcut or temporary button) that attaches a classification string to the drawn box.
+- Multiple box support: the player can draw more than one box per level.
+- An IoU evaluator function: given a `PlayerBox` rect and a `GroundTruthTarget` rect, it calculates the intersection area, the union area, and returns `intersection / union` as a float. It is a pure math function with no side effects.
+- A Submit button that, when clicked, iterates over all player boxes, runs IoU evaluation against all ground truth targets, determines matches (IoU ≥ `minimum_iou` AND tag matches `required_tag`), identifies false positives (boxes matching no target), and identifies missed targets (ground truth targets matched by no box).
+- A countdown timer (reading `time_limit_seconds` from LevelData) that fires `OnTimerExpired` via the Event Bus when it reaches zero.
+- Debug output showing: each box's IoU score, match status, sabotage detection flag, time remaining at submission.
+
+**What Does NOT Exist Yet:** Level transitions, economy, payout logic, desktop OS.
+
+---
+
+### MILESTONE 3: THE LOOP WITH CONSEQUENCES
+
+**Goal State:** At the end of this milestone, the player can complete a sequence of 3+ levels loaded entirely from JSON, with correct branching between them. Each submission triggers a financial consequence. A wallet display tracks the running balance. The submission-to-transition flow is seamless: success loads `on_success.next_level_id`, failure loads `on_failure.next_level_id`, timeout loads the failure branch. The sabotage detection path writes distinct flags to GlobalStateManager. The economy produces visible pressure — a shift can end with the player in the red.
+
+**What Exists:**
+- The Submission Pipeline: a system that receives the list of PlayerBoxes, the current LevelData, and the time remaining; produces a complete `SubmissionResult` (as defined in Contract 4); and emits it via the `OnSubmissionEvaluated` event channel.
+- The Economy / Wallet Manager: receives `AdjustBalance(delta, reason)` calls from the Submission Pipeline; maintains a running balance; emits `OnBalanceChanged`; displays the current balance on screen.
+- Time-decay payout: the financial delta is multiplied by a curve based on `timeRemaining / time_limit_seconds`. Submitting within the first 30% of the timer grants the Rapid Response Bonus (200%). Submitting in the last 10% drops the payout to the Lethargic rate (10%).
+- Level chaining: after a submission, the Level Manager reads `next_level_id` from the appropriate branch of `branching_logic`, loads the corresponding JSON, and transitions to the next level without manual intervention. The chain terminates when `next_level_id` is null or a sentinel value.
+- The GlobalStateManager receives `flag_changes` from `SubmissionResult.branching_logic` on every submission. Debug output confirms flags are accumulating correctly across levels.
+- An `on_failure_fatal` branch triggers correctly when a tag is correct geometrically but wrong categorically (perfect IoU, wrong tag string).
+- Sabotage detection: IoU == 0 AND timeRemaining > 2.0 → `is_sabotage = true`, distinct flag changes applied.
+
+**What Does NOT Exist Yet:** Shift assembly, pacing algorithm, day cycle, desktop OS, receipt screen.
+
+---
+
+### MILESTONE 4: THE SESSION STRUCTURE
+
+**Goal State:** At the end of this milestone, a complete "shift" can be played from start to finish. The Level Manager assembles a queue of levels from a mix of filler and story pools based on a DayManifest JSON, orders them according to the pacing curve, and feeds them one at a time through the annotation engine. When the last level completes, a receipt screen summarizes the shift. The Day Cycle Manager tracks the current day and game phase. Daily rent is deducted at end-of-day. The day counter increments. The game can cycle through Day 1 → Day 2 → Day 3 with mechanically distinct content on each day.
+
+**What Exists:**
+- The Campaign Manifest System: reads the DayManifest for the current day, checks each `story_event_id`'s prerequisites against GlobalStateManager, returns only qualifying events.
+- The Level Manager: receives a filtered DayManifest; randomly selects `filler_count` levels from the filler pool; injects qualifying story events; orders the combined set according to the `shiftPacingCurve` string array (F/H slots mapped to filler/story); emits `OnLevelLoaded` for the first level.
+- After each `OnSubmissionEvaluated`, the Level Manager advances to the next level in the queue. After the final level, it emits `OnShiftComplete(ShiftSummary)`.
+- The Receipt Screen: displays on `OnShiftComplete`; shows total levels, success count, accuracy percentage, total earned, total penalties, net balance change.
+- The Day Cycle Manager: manages `GamePhase` transitions (OS_BOOT → INBOX → SHIFT_ACTIVE → RECEIPT → OS_DESKTOP → DAY_END); emits `OnPhaseChanged`; listens for player-initiated phase transitions (accept gig → start shift; power button → end day).
+- End-of-day processing: Economy Manager deducts daily rent and server fees; Day Cycle Manager increments `current_day` in GlobalStateManager; emits `OnDayStarted` for the new day.
+- At least 3 DayManifest JSONs, 10+ filler level JSONs, and 3+ story level JSONs exist as test content. Day 2's manifest contains a story event with a prerequisite that depends on a flag settable only through a Day 1 action. This proves cross-day consequence.
+
+**What Does NOT Exist Yet:** Desktop OS (inbox, store, file manager), save/load, visual polish.
+
+---
+
+### MILESTONE 5: THE OS ECOSYSTEM
+
+**Goal State:** At the end of this milestone, the full macro loop is playable. The player boots into a simulated desktop OS, reads emails, makes inbox choices that set flags, accepts a gig, completes a shift, views the receipt, visits the store to purchase items that mechanically alter the next shift, clicks the hardware power button to end the day, and wakes up to a new day where their previous choices have visibly changed the available content. The save system persists all state. This is the Vertical Slice Gate.
+
+**What Exists:**
+- The OS Desktop Shell: a 2D UI canvas representing the CRT monitor. Contains a taskbar, desktop icons (Inbox, Store, Annotation Software, File Manager, Power Button), and a persistent wallet display. Elements show/hide based on `OnPhaseChanged`.
+- The Inbox Manager: on `OnDayStarted`, scans the `pending_emails` queue and delivers any email whose `deliver_on_day` matches `current_day`. Displays emails in a list with sender, subject, and body. Presents choice buttons. On choice selection: writes `set_flags` to GlobalStateManager, queues `next_thread_id` with `delay_days` added to `current_day`, marks the thread as sent. At least 2 email chains of 3+ nodes each exist as test content.
+- The OS Store: displays purchasable items with costs and descriptions. On purchase: validates balance via Economy Manager, deducts cost, writes effect flags to GlobalStateManager (e.g., `"has_cooling_gel": 1`). The Timer System reads `timer_modifier_ms` from GlobalStateManager and adds it to `time_limit_seconds`. The Submission Pipeline reads `iou_modifier_hundredths` and adjusts `minimum_iou` accordingly. These effects are measurable in the next shift.
+- The Gig Offer UI: before each shift, the Inbox or a dedicated panel displays available gigs from the DayManifest's `gig_offers`. The player selects one, and the Level Manager assembles the corresponding shift.
+- The Power Button: rendered as a diegetic hardware element outside the OS window. Clicking it triggers end-of-day processing and save.
+- The Save System: serializes the composite payload (Contract 12) to a local file on end-of-day. On game boot, if a save exists, all systems are restored to their saved state. The player resumes on the correct day with all flags, balance, pending emails, and purchased items intact.
+- The File Manager: a basic diegetic folder UI with a notification badge system. Files can be placed into it by game events. Clicking a file opens its content. (Skeleton only — content authored in later milestones.)
+
+**Verification Test (The Full Loop):**
+- Day 1: Read email from "Senator_V_Encrypted." Choose "Extort." Flag `Senator_Trust` set to -1. Buy Cooling Gel. End day.
+- Day 2: Senator's threatening reply appears in inbox (delay_days was 0). Today's shift includes a story level that only appears because `Senator_Trust < 0`. Timer is 1 second longer because of Cooling Gel. Complete shift. View receipt. End day.
+- Close game. Reopen game. Game loads on Day 3 with all state intact.
+
+**If this test passes, the Vertical Slice Gate is cleared.**
+
+---
+
+### MILESTONE 6: WORLD SIMULATION
+
+**Goal State:** At the end of this milestone, the drone feed levels are no longer static images. They contain dynamic 2D sprite characters assembled via the paperdoll system, with NPC state machines that idle, patrol, flee, and panic. The Drone Altitude Manager allows zoom via scroll wheel, toggling between thermal (high altitude, ambiguous blobs) and optical (low altitude, visual clarity) rendering. Zooming in fills the suspicion meter; when it reaches 100, all NPCs in the level panic and flee. The annotation engine (bounding boxes, IoU, submission) works seamlessly on top of these dynamic scenes. NPCs that flee off-screen write their data to TransientNPCData, and the next level's spawner can read it.
+
+**What Exists:**
+- The Drone Altitude Manager: scroll input adjusts orthographic camera size between `maxAltitude` and `minAltitude`. A `dangerThreshold` determines when noise begins. Below the threshold, `suspicionMeter` fills proportionally to zoom depth per frame. Above it, suspicion decays. At 100, `OnTargetPanicked` fires. The visual layer renders a thermal shader/overlay at high altitude and standard sprites at low altitude, with a smooth transition zone.
+- NPC State Machines: each NPC prefab has a state machine with at minimum: `Idle`, `Patrol`, `Flee`, `Stunned`, `Escaped`. NPCs listen for `OnTargetPanicked` — when received, all NPCs in `Idle` or `Patrol` transition to `Flee`. Fleeing NPCs move toward viewport edges. When an NPC's world position crosses the viewport boundary (`Camera.WorldToViewportPoint` outside 0–1 range), the NPC fires `OnNPCEscaped` and writes its data to the `TransientNPCData` ScriptableObject.
+- The Paperdoll System: NPC prefabs are assembled from a base body with child slot objects (Hat, Weapon, Accessory), each with a `SpriteResolver`. A `SpriteLibraryAsset` defines categories (e.g., "Fedora", "SkiMask") and labels (e.g., "Walk_01", "Walk_02"). A single Animator drives label changes on all slots simultaneously. NPC appearance is configured entirely via category strings — no sprite swapping code per character.
+- TransientNPCData: a ScriptableObject asset that holds one NPC's snapshot. On escape, the leaving NPC's script writes to it. On the next level's `OnLevelLoaded`, the spawner checks TransientNPCData; if populated, it spawns the NPC with matching appearance and state, then clears the asset.
+- Ground truth bounding boxes in LevelData now track moving NPC sprites. The `bbox` in JSON is reinterpreted as an offset relative to the NPC's spawn position OR as absolute coordinates for a specific frame (design decision to be locked during this milestone). The IoU evaluator works correctly against moving targets.
+
+**What Does NOT Exist Yet:** Entity interactions (grappling, hostage deadlocks), OS-to-world tactical commands, audio intel.
+
+---
+
+### MILESTONE 7: ENTITY INTERACTIONS & TACTICAL BRIDGE
+
+**Goal State:** At the end of this milestone, NPCs can interact with each other (Driver/Driven entity hiding pattern), the player can issue tactical commands from the OS desktop that instantly affect NPC behavior in the drone feed, and the full collateral damage chain executes correctly on friendly fire. The hostage deadlock scenario is playable: a terrorist grabs a hostage, the player cannot use the drone missile, the player issues a flashbang via the OS chat, the terrorist is stunned, the hostage flees, and the drone can now fire.
+
+**What Exists:**
+- Entity Interaction System (Driver/Driven): when two NPCs reach interaction distance, the Driver (e.g., Police) calls `Capture()` on the Driven (e.g., Hostage). The Driven's `SpriteRenderer` and collider are disabled. The Driver plays a combined sprite sheet animation containing both characters. On animation end (via Animation Event), the system resolves the outcome: either the Driven breaks free (re-enabled, teleported, set to Flee) or the interaction completes (e.g., hostage rescued or executed).
+- NPC `Standoff` state: the NPC has an internal `Patience` timer. While in `Standoff`, patience decrements per frame. If patience reaches 0, the NPC transitions to `Execute`. This gives NPCs autonomous agency.
+- OS → World Tactical Bridge: the OS Desktop Shell contains a "Tactical Chat" panel (visible during `SHIFT_ACTIVE` phase). Buttons in this panel (e.g., "Deploy Flashbang", "Offer Bribe", "Cut Lights") call `OnTacticalAction.Raise(action)`. NPC state machines subscribe to this channel. On receiving a matching action, NPCs override their current state (e.g., `ForceStun()` transitions from `Standoff` or `HostageDeadlock` to `Stunned`, re-enables hostage, kills patience timer).
+- The Collateral Damage Chain: when the player boxes a friendly NPC and tags them as "Combatant", the Submission Pipeline detects the match against a non-hostile ground truth target (or against no target if the friendly isn't in the ground truth array, registering as a false positive). The chain executes: the friendly's sprite is replaced with a destruction decal; nearby hostile NPCs transition to `Shocked` then `Flee`; the Economy Manager applies the collateral damage penalty; the OS chat pushes a corporate warning.
+- The full hostage deadlock scenario is playable end-to-end using at least one test level JSON, proving: terrorist grabs hostage → player cannot tag without collateral → player uses chat flashbang → terrorist stunned → hostage freed → player tags terrorist → drone fires → success payout.
+
+**What Does NOT Exist Yet:** Audio, visual atmosphere, narrative content depth.
+
+---
+
+### MILESTONE 8: AUDIO & ATMOSPHERE
+
+**Goal State:** At the end of this milestone, the game has its oppressive diegetic soundscape, the audio intel system works (zooming in reveals NPC-specific dialogue and subtitles), the room behind the monitor evolves based on player state, and CRT post-processing effects are applied. The timer has audio-visual feedback (fan pitch, vignette, clack). The game *feels* oppressive even with placeholder art.
+
+**What Exists:**
+- Diegetic ambient audio: PC cooling fan loop, keyboard clacking on input, server hum. No music. These play from the OS Desktop Shell and persist across phases.
+- Timer audio-visual feedback: at 50% time remaining, fan audio pitches up slightly. At 40% (2s on a 5s timer), fan pitch increases noticeably. At 20% (1s), screen edges vignette red, a harsh mechanical clack plays. On expiry, a buzzer plays.
+- Audio Intel System: `StateMachineBehaviour` scripts attached to NPC animation nodes. Each behaviour holds an `AudioClip` reference and a `subtitleText` string. `OnStateEnter` checks the current `ViewMode` from Drone Altitude Manager; if `OPTICAL`, it sends the audio clip and subtitle to the `IntelManager`. The `IntelManager` plays the clip via an `AudioSource` with `panStereo` mapped to the NPC's screen-space X position (-1 left, +1 right). A `TextMeshPro` UI element displays the subtitle.
+- Submission transition sound: a heavy, visceral bass hit plays on every level transition to emphasize the drone's kinetic action.
+- Room Visual Evolution: the margins of the screen (outside the CRT bezel) display background sprites. These swap based on GlobalStateManager flags: high debt shows darkness, final notices, water damage; high Corporate_Trust shows sterile cleanliness, ergonomic keyboard; high Rebel_Sympathy shows sticky notes, burner phone, rebel insignia. The swap logic reads flags on `OnDayStarted`.
+- CRT Post-Processing: a post-processing volume or custom shader applies scanlines, slight curvature, and color fringing to the monitor area. The player's cursor and bounding box tool render *above* this effect layer to maintain crisp input responsiveness.
+- UI sound effects: click sound on box draw start, snap sound on box finalize, tag confirmation sound, wallet increase/decrease sounds (distinct tones).
+
+**What Does NOT Exist Yet:** Full narrative campaign, pressure system tuning, hacker intrusions, endings.
+
+---
+
+### MILESTONE 9: NARRATIVE CAMPAIGN & PRESSURE SYSTEMS
+
+**Goal State:** At the end of this milestone, the full 30-day campaign structure is in place. All pressure systems are operational: wage suppression triggers on high accuracy, the debt spiral activates on negative balance, emotional sink modifiers alter gameplay variables based on email outcomes. The prerequisite system supports the full complexity of the narrative design. The Day 29 Bottleneck correctly evaluates player loyalty and locks them into one of three conditions. Hacker intrusion events fire on their designated days. The game is content-ready: a designer can author the full campaign by writing only JSON files.
+
+**What Exists:**
+- Wage Suppression: after each shift, if `ShiftSummary.accuracy ≥ 0.95`, the system reduces `base_payout_modifier` in GlobalStateManager (e.g., from 100 to 60, representing cents). The next morning, a corporate email is generated and pushed to the inbox explaining the wage reduction. The Level Manager applies this modifier to all `base_payout` values when assembling the shift queue.
+- Debt Spiral / Loan System: when `OnDebtThresholdCrossed` fires (balance ≤ 0 before rent), the system forces a "Corporate Advancement Loan" — adds $50 to balance, sets `loan_balance_cents` flag. Each subsequent `DeductDailyExpenses` call adds loan interest ($5/day). If balance crosses the ultimate negative threshold (e.g., -$100 after loan), the system sets `ending_condition = 3` and forces the termination path.
+- Emotional Sink Modifiers: specific GlobalStateManager flags (e.g., `sister_status = -1`) apply continuous gameplay modifiers. The Timer System multiplies `time_limit_seconds` by a factor read from a modifier flag (e.g., `timer_global_multiplier`). The Level Manager can override `penalty_deduction` for specific levels when `gov_blackmail = 1`. These modifiers are applied at level load time, not hardcoded into level JSONs.
+- Full prerequisite system at scale: the Campaign Manifest System supports AND-logic prerequisites (all flags must match), and the InboxManager supports delay-based email chains of arbitrary length. A test campaign of at least 10 days with interconnected branches proves the system handles:
+  - A Day 3 choice affecting Day 14 content.
+  - Mutually exclusive email chains (choosing one locks out the other).
+  - Mandatory events that override normal gig offers on specific days.
+- Day 29 Bottleneck: on Day 29, the Day Cycle Manager sets phase to `OS_BOOT` with the "Start Shift" button disabled. The InboxManager runs the evaluation algorithm against `Corporate_Trust` and `Rebel_Sympathy` thresholds, determines Condition A, B, or C, sets `ending_condition`, pushes the appropriate bottleneck email, and unlocks/locks store items accordingly.
+- Hacker Intrusion Events (at least 3 authored):
+  - **Terms of Service Update:** mid-shift popup with highlighted letters; clicking them in order sets a flag enabling the "Decoy" tag in the annotation software.
+  - **Rogue Drone AI:** a chatbox widget that presents canned response options; responses modify `Corporate_Trust` and set a flag that causes the drone to miss targets in future levels (lower IoU threshold applied server-side).
+  - **Fourth Wall Break:** a level where the ground truth contains the player's OS username and wallet balance rendered on a sign; boxing the sign instead of the target drops a file into the File Manager.
+- **Metadata Injection:** during designated levels, the "Target Identification Guidelines" text field in the annotation UI is temporarily overwritten with rebel instructions. This is driven by a flag in the LevelData JSON (`"metadata_override": "The convoy is a trap. Tag the lead vehicle as civilian."`).
+- The Spectrogram Tool: accessible from the File Manager; accepts a `.wav` file asset, renders a visual spectrogram, and reveals hidden text/coordinates embedded in the frequency data. This is a static visual decode puzzle — the spectrogram image is pre-authored and swapped in when the correct file is loaded.
+- Anti-exploit mechanics: time-decay payout curve is tuned; suspicion meter prevents indefinite zoom-and-wait; drone vulnerability (tagging a rocket launcher target late incurs hardware repair fee even on success) is implemented.
+
+**What Does NOT Exist Yet:** The three ending sequences, final content pass, full 30-day JSON authoring.
+
+---
+
+### MILESTONE 10: ENDINGS, CONTENT, & SHIP
+
+**Goal State:** At the end of this milestone, the game is complete. All three endings execute with their UI-breaking sequences. The full 30-day campaign is authored in JSON (all emails, all manifests, all levels, all filler pools, all gig offers). The game can be played from Day 1 to Day 30, reaching any of the three endings, saving and loading at any point, with no hardcoded narrative branches in the codebase. Final tuning of economy values, pacing, and difficulty is complete.
+
+**What Exists:**
+- **Ending 1 (Corporate Loyalist):** purchasing the Exit Visa triggers: an unskippable fullscreen video plays (corporate congratulatory); diegetic ambient audio (fan) fades to zero; the 2D Desktop Canvas is disabled entirely; a fullscreen drone camera view renders (can be a static/animated 2D image — no 3D required); synthetic voice line plays; credits roll.
+- **Ending 2 (Rebel Sympathizer):** activating the Root Access Override on Day 30 triggers: post-processing effects crank up (chromatic aberration, digital glitch); the final level JSON loads with inverted targets (Corporate HQ as the ground truth); the timer is extended to 10 seconds; payout logic is disabled; on successful submission, the screen flashes white, the OS crashes to a simulated DOS prompt, "SYSTEM LIBERATED" prints character by character; credits roll.
+- **Ending 3 (Debt Spiral):** on the termination path: the Unity `EventSystem` is disabled (player cannot click anything); the final level loads showing a top-down thermal view of a desk with a person; a coroutine drives a phantom cursor across the screen; the phantom cursor draws a bounding box around the player's own thermal signature; "TARGET ACQUIRED" flashes; the screen cuts to black with a missile impact sound; the game calls `Application.Quit()` after a delay.
+- **Full 30-Day Content:** all DayManifest JSONs (Days 1–30), all email chain JSONs (every thread from every faction), all filler level JSONs (50–70), all story level JSONs (20–30), all gig offer definitions. Content follows the GDD's narrative spine: the 3 communication channels (rebels = pre-shift async, corporate = live chat, family/politicians = multi-day email chains) are fully authored.
+- **Moral Dilemmas** (at least the 3 from the GDD): Bridge Collapse, Whistleblower's Drive, Friendly Fire Cover-Up — each with dual objectives, contradictory flag consequences, and delayed rewards/punishments.
+- **Economy Balance Pass:** all baseline financial values tuned (daily rent $12, server fee $3.50, base payouts, penalties, store costs, Exit Visa / Root Access at $5,000). The game is verified playable on all three paths without trivial exploitation or impossible debt traps (unless the debt trap is intentional for Ending 3).
+- **Polish Pass:** all placeholder art replaced with final assets. All text finalized. All audio integrated. The 4:3 CRT monitor within 16:9 framing is finalized with bezel art, sticky notes, and the physical room margins.
+- The game handles edge cases defined in the GDD: double-boxing, wrong tag on correct box, negative wallet mid-shift, and timeout. Each produces the correct financial and narrative consequence.
+
+---
+
+## PART V — THREE HIGHEST-RISK ARCHITECTURAL DECISIONS
+
+---
+
+### RISK 1: The GlobalStateManager as Single Source of Truth
+
+**The Trap:** Creating multiple state-tracking systems — an economy manager with its own internal flags, an inbox manager that tracks narrative state separately, NPC scripts that remember their own history. Over 30 days of campaign, these parallel state stores inevitably desynchronize. Save/load becomes a nightmare of serializing six different objects. Adding a new cross-system consequence (e.g., "sister's death affects the timer") requires touching three systems that don't know about each other. By Day 15, the developer is debugging phantom flag mismatches instead of authoring content.
+
+**The Correct Approach:** One dictionary. One access pattern. Every system in the game reads and writes through `GlobalStateManager.GetFlag()` and `SetFlag()`. The Economy Manager does not store "has_cooling_gel" internally — it reads it from the flag dictionary. The Timer System does not store its modifier — it reads `timer_modifier_ms` from the dictionary on each level load. The Inbox Manager does not evaluate narrative state from its own records — it queries the dictionary. This means the Save System serializes exactly one `Dictionary<string, int>` plus the Economy balance and the Inbox pending queue. Cross-system consequences are trivial: any system can set a flag, and any other system can react to it, with zero coupling between them. The dictionary is the game's single canonical state. If it is accurate, the entire game is accurate.
+
+---
+
+### RISK 2: Coupling the OS Desktop to the Drone World
+
+**The Trap:** When building the "Flashbang" button or the "Offer Bribe" chat option, the natural instinct is to give the UI button a direct reference to the `PoliceOfficer` or `Terrorist` GameObject in the scene. This works for the first prototype. Then the developer adds a second tactical action, and now the chat UI has references to two NPC types. Then a third. Then the NPCs need to react to *combinations* of actions. By Milestone 7, the `ChatWindow.cs` script imports every NPC type in the game, and adding a new tactical option requires modifying both the UI code and every NPC script. A single refactor cascades across the entire project. Additionally, UI elements and world-space NPCs exist in different scenes or canvases — direct references break when levels reload.
+
+**The Correct Approach:** The ScriptableObject Event Bus as defined in Contract 2. The UI button knows only the event channel asset — it calls `OnTacticalAction.Raise(TacticalAction.Flashbang)`. The NPC state machine knows only the same event channel asset — it subscribes in `OnEnable`, unsubscribes in `OnDisable`. Neither system imports, references, or is aware of the other. Adding a new tactical action requires: (1) creating a new enum value, (2) adding a button that raises it, (3) adding a handler in the NPC state machine. Zero existing code is modified. The Event Bus pattern must be established in Milestone 1 and used universally — if even one system bypasses it with a direct reference, the architecture's decoupling guarantee is void.
+
+---
+
+### RISK 3: Hardcoding the 30-Day Campaign Sequence
+
+**The Trap:** Building Day 1 as a scene. Building Day 2 as a scene. Writing `if (currentDay == 5 && rebel_trust > 2)` in the Level Manager. Authoring a `switch` statement with 30 cases. This feels productive in Week 1 because each day is "done." By Day 10, the developer realizes that adding a new side quest on Day 7 requires modifying the Day 7 case, the Day 12 case (where the consequence lands), the Day 20 case (where the second consequence lands), and the Day 29 bottleneck evaluation. A single new narrative thread touches 4+ code locations. By Day 20, the branching logic is an unmaintainable web of cross-referencing conditionals. The GDD explicitly warns against this as "spaghetti code."
+
+**The Correct Approach:** The "Flag and Prerequisite" system described in the GDD. Each day is a DayManifest JSON (not a scene, not a code case). Each story event is a self-contained JSON with its own `prerequisites` dictionary. The Level Manager's day-assembly logic is a single generic loop: iterate the event pool, check each event's prerequisites against GlobalStateManager, include qualifying events, fill remaining slots with filler. This loop is written once in Milestone 4 and never modified again. Adding a new side quest means writing one new Level JSON with the correct prerequisites and adding its `level_id` to the appropriate DayManifest's `story_event_ids` array. Zero code changes. The developer's content authoring workflow, for the entire second half of production, is writing JSON files and creating art assets — not touching the codebase. If the prerequisite system is compromised or bypassed even once with a hardcoded check, it creates a precedent that erodes the entire data-driven architecture.
+
+---
+
+*End of Technical Master Plan.*

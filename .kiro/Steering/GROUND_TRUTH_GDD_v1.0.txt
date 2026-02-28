@@ -1,0 +1,784 @@
+**Section 0 — Document Overview & Project Vision**
+
+**Logline**
+In a dystopian near-future metropolis, the player assumes the role of an exploited gig-economy drone operator who never pulls a trigger. Instead, they interact with a sterile, low-rent web portal, drawing geometric bounding boxes over delayed thermal and optical footage to tag human targets for autonomous military missile strikes. Earning literal pennies per confirmed kill while fighting a crushing daily debt spiral, the player is entirely divorced from the violence they orchestrate—they simply annotate the ground truth.
+
+**Document Purpose**
+This Game Design Document (GDD) serves as the complete production bible for a solo independent developer. It comprehensively details every facet of the project, from core interaction mechanics to the underlying narrative architecture and final execution states. The methodology outlined herein prioritizes a strictly data-driven, highly scalable development approach, ensuring that complex systemic interactions and branching narratives can be authored without generating unsustainable, hardcoded "spaghetti code."
+
+**Section Guide**
+
+| Section | Description |
+| :--- | :--- |
+| **Section 1: Vision & Pillars** | Defines the high-level pitch, setting, and fundamental thematic dissonance driving the experience. |
+| **Section 2: Core Gameplay Loop** | Breaks down the minute-to-minute annotation mechanics and the daily macro structure of a gig-economy shift. |
+| **Section 3: Drone Technical Blueprint** | Details the procedural pacing algorithm and the real-time altitude/noise zoom mechanics dictating target behavior. |
+| **Section 4: Annotation & Scoring** | Outlines the mathematical evaluation of player bounding boxes, entity interactions, and the dynamic paperdoll system. |
+| **Section 5: Audio & Intel System** | Explains the oppressive diegetic soundscape and the directional audio intelligence gathering tied to NPC animation states. |
+| **Section 6: OS / Desktop Ecosystem** | Maps the physical workspace evolution, asynchronous JSON email architecture, and diegetic hacker intrusions. |
+| **Section 7: Narrative Spine & Flags** | Defines the data-driven prerequisite system, the two-axis invisible loyalty meters, and the inescapable Day 29 bottleneck. |
+| **Section 8: Economy & Pressure Systems** | Establishes baseline financial variables, the predatory debt spiral, and algorithmic wage suppression mechanics. |
+| **Section 9: Technical Architecture** | Provides the C# and JSON blueprints for the core managers, event bus, and asset generation pipeline required for a solo developer. |
+| **Section 10: Endings & Climax Design** | Scripts the technical and dramatic execution of the three distinct, UI-breaking final missions based on player allegiance. |
+
+**The Core Design Philosophy**
+
+**Pillar 1 — Complicity by Design:** The player is never the soldier; they are the administrator. Moral weight within the game is generated entirely through bureaucratic distance rather than direct violence. The horror of the experience stems from the sterilization of lethal kinetic action into mundane, repetitive data entry.
+
+**Pillar 2 — Mechanical Consequence:** Every narrative choice must express itself as a tangible mechanical change within the core loop. Whether a decision manifests as a mathematically shorter timer, a higher financial penalty, or a locked interface button, emotion and consequence are delivered exclusively through gameplay constraints, never through passive cutscenes.
+
+**Pillar 3 — Solo Dev Scalability:** Every system—audio, narrative, economy, and AI—is inherently data-driven via JSON and ScriptableObjects. No level sequence or narrative branch is hardcoded. The developer authors the underlying logic once, allowing the game's volume and complexity to scale efficiently through external data manipulation.
+
+**Target Platform & Scope**
+*GROUND TRUTH* is targeted for release on PC (Steam). The scope is strictly calibrated for a single independent developer operating on a 12-month production timeline. Built entirely in Unity 2D, the project bypasses 3D rendering bottlenecks to deliver a highly polished, systemic 3-to-4 hour playtime across a rigid, linear 30-day in-game campaign.
+
+---
+
+**Section 1 — VISION & OVERVIEW**
+
+**GAME TITLE (Working Title)**
+GROUND TRUTH
+
+**One-Sentence Pitch:**
+You are a gig-economy data labeler tasked with drawing boxes around objects in grainy photos for pennies, only to realize your tags are providing real-time targeting data for an autonomous military strike drone navigating a live combat zone.
+
+**Setting:**
+A claustrophobic, dimly lit studio apartment in a near-future cyberpunk metropolis, where the player interacts entirely through the screen of a simulated, low-rent gig-economy web portal (a "click farm" interface) running on a deteriorating operating system.
+
+**The Twist That Makes It Exciting:**
+The feeds you are annotating are not historical training data; they are live, slightly delayed optical camera feeds from a heavily armed AI drone operating in a high-stakes, unfolding hostage crisis. The "boring" act of labeling dictates the drone's immediate, autonomous life-or-death actions. Mislabeling a fleeing hostage as a "combatant" results in the next feed showing the hostage's execution; taking too long to label a "hazard" results in the drone taking damage. The mundane UI task is actually a high-stakes, real-time tactical shooter where your only weapon is the desktop crop tool.
+
+**Why It Doesn't Exist Yet:**
+While existing simulation games masterfully explore the drudgery of bureaucracy (*Papers, Please*) or the ethics of surveillance, and real-world gig economy simulators exist, the exact mechanical translation of modern "AI Data Annotation" (bounding boxes, semantic image segmentation) has never been inverted into a real-time, high-stakes tactical combat system. It fills the market gap for "dark secret" mundane simulators by tapping directly into contemporary, real-world anxieties about AI warfare, autonomous targeting, and exploitative tech labor, offering an intense combat experience that is completely devoid of traditional avatars, 3D movement, or standard weaponry.
+
+**Core Thesis & Dissonance:**
+The concept of *GROUND TRUTH* directly addresses the core thesis of this design: that the perceived tedium of any mechanical task is fundamentally a function of its consequence. By taking one of the most mechanically sterile and culturally invisible activities of the modern era—drawing geometric shapes around pixels for machine learning algorithms—and fusing it with the highest possible narrative and systemic stakes, the design achieves absolute mechanical and thematic dissonance.
+
+This deliberate dissonance is what elevates the concept above standard, commoditized simulators. The player's cognitive load is aggressively split between the cold, algorithmic interface of an exploitative gig-economy web portal and the visceral, horrifying reality of the kinetic actions that portal controls. The game demands cold, mechanical efficiency to survive financially, but punishes the player emotionally and systemically when that rushed efficiency inevitably leads to a misidentification and subsequent collateral damage.
+
+**Dev Scope Check:**
+Yes, 1 developer can easily build this using standard asset store assets. The entire game takes place within a 2D OS/web-browser interface. The project relies entirely on 2D UI programming, dynamic 2D Unity sprites, and branching logic, making a 6 to 12-month production cycle highly realistic for a dedicated solo developer. The removal of 3D character controllers, real-time lighting, physics engines, and AI pathfinding eliminates 90% of traditional game development bottlenecks.
+
+---
+
+**Section 2 — CORE GAMEPLAY LOOP**
+
+**The Boring Task(s):**
+1. Drawing highly precise geometric bounding boxes around specific requested objects in dynamic 2D Unity sprite scenes.
+2. Selecting the correct categorical classification for the boxed object from a rigid drop-down menu or via keyboard shortcuts (e.g., "Combatant," "Non-Combatant," "Structural Hazard," "High-Value Target").
+3. Managing a meager digital wallet to pay daily in-game living expenses, server connection fees, and workstation cooling costs to prevent system throttling.
+
+**Core Loop (3 steps):**
+**Step 1: Observe & Annotate** → A distorted, chaotic feed flashes onto the terminal interface. A strict, unforgiving timer (e.g., 5 seconds) begins. The player must rapidly draw bounding boxes around the requested entities and tag them using the correct categorization shortcuts.
+**Step 2: Submit & Execute** → The player hits "Submit." The system processes the tags, and the drone executes its kinetic actions blindly, based *exactly* on the player's provided geometric parameters and classifications.
+**Step 3: Review Consequence** → The next live feed shows the immediate, often gory aftermath of the drone's actions based on the previous tags. The UI pays out literal pennies for accuracy, deducts massive financial penalties for collateral damage, and immediately serves the next live level. The loop repeats with increasing speed, visual distortion, and moral complexity.
+
+**The Macro Loop (Day-to-Day Flow):**
+To create a compelling session flow, the macro cycle must handle the overarching preparation, core gameplay execution, and post-session evaluation seamlessly. Here is the exact step-by-step flow of a single session:
+*   **Step 1: OS Boot & The Inbox (Preparation):** The game boots directly into the oppressive desktop OS. The player opens their email client to find daily "Gig Offers." Each gig displays the image count, base payout per image, and a vague risk warning (e.g., "Routine Traffic Monitoring" vs. "Active Kinetic Operation").
+*   **Step 2: The Shift (Execution):** The player clicks "Accept" and the screen locks into the annotation software. The UI restricts access to everything else. The state machine loops through the assigned $N$ number of JSON level files. The timer dictates the pace, creating a continuous feedback loop of drawing, tagging, and immediate visual consequence.
+*   **Step 3: The Receipt (Evaluation):** Once the last level is processed, the software unlocks. A harsh, dot-matrix style receipt prints on the screen, tallying Base Pay, Accuracy Bonuses, Missed Targets, and Collateral Damage Penalties.
+*   **Step 4: The Desktop Economy (Strategy):** The player is returned to the desktop. They must now navigate the OS store to spend their earnings on essential game economy sinks. They buy PC cooling gel to restore their timer, pay server connection fees, or purchase visual clarity upgrades.
+*   **Step 5: End Day / Rent Due:** The player clicks "End Day." A mandatory rent deduction is taken from their wallet. The game auto-saves, increments the Day counter, and loops back to Step 1.
+
+**Mechanical Edge Cases (The "What Ifs"):**
+A robust game loop must account for unexpected player behavior and boundary conditions. Here is how the state machine handles specific edge cases:
+*   **What if the player draws TWO boxes when the JSON only asked for one?** The system evaluates all drawn boxes. The first box might match the ground truth, but the second box will evaluate against nothing, registering as a "False Positive." In the context of the game, highlighting empty space or a trash can and tagging it "Combatant" means the drone blindly fires into that area. This applies a massive collateral damage penalty.
+*   **What if the player draws a box perfectly, but selects the WRONG tag?** This is the most critical failure state in the game. If a player perfectly boxes a civilian but tags them as a "Combatant," it triggers a specific `on_failure_fatal` JSON branch. The next feed shows a gruesome friendly-fire consequence, and the player suffers the maximum possible financial deduction.
+*   **What if the player's wallet goes into the negative mid-shift?** The shift does *not* end instantly. Letting the player finish the shift while watching their UI flash red and their debt spiral creates immense psychological tension. They must finish the shift in debt, desperately trying to string together perfect tags to climb back to $0.00 before the end-of-day rent is due.
+
+**Player Intent vs. Player Skill:**
+How the game mathematically differentiates between "Intentional Sabotage" and "Clumsy Failure":
+
+**1. The Clumsy Failure (Timeout)**
+If a player is simply bad at the game or cannot find the target, they will naturally hesitate. The timer will reach $0$ before they can submit a tag, or they will submit a tag at the very last millisecond.
+*   **The Math:** If `Time_Remaining <= 0.0` or a `null` input is registered.
+*   **The Result:** The drone feed cuts out. The target escapes due to operator incompetence.
+*   **The Payout:** The player receives a standard `-$5.00` penalty for missing a target and loses `-2 Corporate_Trust`. Because the rebels know the operator was just incompetent rather than helpful, the player gains `+0 Rebel_Sympathy`.
+
+**2. The Intentional Sabotage (The Decoy Strike)**
+To actively save a rebel, the player must intentionally waste the drone's kinetic payload to create a diversion so the rebel can flee. To do this, the player must draw a bounding box over a completely harmless object (like a trash can or a brick wall) and confidently tag it as a "Combatant."
+*   **The Math:** The system checks the bounding box overlap against the ground truth target. If `IoU == 0%` AND `Time_Remaining > 2.0` seconds, the system recognizes this as a fast, confident, yet entirely incorrect decision.
+*   **The Result:** The drone fires a missile directly at the harmless brick wall. The next feed shows the wall destroyed and the rebel safely running away from the blast radius.
+*   **The Payout:** The player is hit with a massive `-$15.00` penalty for wasting military hardware and loses `-5 Corporate_Trust`. However, because this was a clear, intentional misfire, the hidden `Rebel_Sympathy` integer increases by `+5`.
+
+**Level Pacing and Volume (The 10-Minute Shift Formula):**
+A perfect shift should last exactly **600 seconds (10 minutes)**. This is the optimal window for high-focus flow state before fatigue sets in. We will use a **3:1 Ratio** of "Routine Filler" to "High-Stakes Interactive" levels. This lulls the player into a false sense of security (muscle memory) before spiking their heart rate (cognitive overload).
+*   **The Math Breakdown:**
+    *   **Total Levels per Shift:** 20 Levels
+    *   **15 Routine Levels:** (Walking targets, parked cars, empty rooms).
+        *   Average completion time: **12 seconds**.
+        *   *Total Time: 180 seconds (3 mins).*
+    *   **5 High-Stakes Levels:** (Hostage standoffs, hacker negotiations, branching choices).
+        *   Average completion time: **45 seconds** (incorporating NPC patience timers and OS chatting).
+        *   *Total Time: 225 seconds (3.75 mins).*
+    *   **Transition & OS Management:** Time spent on the desktop loading levels, checking emails, and spending money.
+        *   *Total Time: 195 seconds (3.25 mins).*
+    *   **TOTAL = 600 Seconds (10 minutes).**
+*   **The Procedural Pacing Algorithm:** Do not randomize the order completely, or you might get 5 High-Stakes levels in a row, which causes burnout. Your Level Manager should load an array based on a specific curve. This ensures the shift starts easy, spikes in the middle, gives them a long breather to think they are safe, and ends on a massive, stress-inducing dynamic level right before rent is due.
+
+**Dynamic Algorithmic Wage Suppression:**
+If a player happens to be highly skilled at video games (fast reflexes, quick mouse movement), they will successfully tag every target, earn maximum payouts, easily pay their rent, buy all the upgrades, and coast through the 30 days. *The narrative will tell them they are an oppressed, starving worker, but the gameplay will make them feel like a wealthy god.* This dissonance ruins the psychological thriller aspect. We must implement a background system that punishes perfection.
+*   **The Mechanic:** If the player ends a shift with a 95%+ accuracy rating, the OS triggers an "Algorithmic Adjustment."
+*   **The Execution:** The next morning, the player receives an automated corporate email: *"Due to a high influx of global gig-worker data, the market value of your annotations has decreased."*
+*   **The Result:** The global `base_payout` variable drops from $0.15 to $0.09.
+
+To survive, the skilled player is now forced to complete levels *faster* (chasing the rapid response time-bonus) and take wilder, uncalculated risks just to maintain their previous income level. By programming the system to actively suppress their wages based on their performance, you guarantee that no matter how skilled the player is, they will always feel the desperate, suffocating pressure of the bottom line.
+
+---
+
+**Section 3 — LEVEL DESIGN & PACING**
+
+**Level Pacing and Volume**
+[See Section 2 — Core Gameplay Loop for full details]
+
+**The Procedural Pacing Algorithm (The 20-Level Array)**
+To perfectly balance the 10-minute shift, the `LevelManager` will use a predefined string array that dictates the flow of 'F' (Filler) and 'H' (High-Stakes) JSON manifests. This specific curve prevents cognitive burnout while maximizing the tension right before the daily rent deduction.
+
+```csharp
+// The optimal pacing curve for a 20-level shift
+string[] shiftPacingCurve = new string[20] {
+    "F", "F", "F",  // Levels 1-3: Easy start, building muscle memory
+    "H",            // Level 4: First unexpected High-Stakes spike
+    "F", "F",       // Levels 5-6: Brief recovery
+    "H", "H", "F",  // Levels 7-9: The middle spike (Cognitive overload)
+    "F", "F", "F", "F", "F", "F", "F", // Levels 10-16: The Long Breather (Lull into false security)
+    "H", "F",       // Levels 17-18: Ramping tension back up
+    "F",            // Level 19: Final moment of calm
+    "H"             // Level 20: Maximum High-Stakes climax before Rent is due
+};
+```
+
+**Content Scalability (The Campaign vs. Filler)**
+To avoid the impossible task of manually authoring 500 linear story events, the game must use a procedural narrative approach that mixes randomly pulled events with structured plot beats.
+
+Instead of one massive script, you will use a "Master Campaign JSON" that acts as a daily director. Every in-game day, this manager generates a "deck of cards" for the shift.
+
+*   **Procedural Filler Pool:** You author 50-70 generic, low-stakes JSONs (e.g., identifying stationary vehicles, marking structural hazards).
+*   **Story Pool:** You author 20-30 high-stakes, narrative-critical JSONs (e.g., sniper on a balcony, hostage execution).
+
+When Day 5 begins, the Campaign JSON dictates: `{"filler_count": 8, "story_event_id": "op_sparrow_01"}`. The game randomly pulls 8 filler images and shuffles the 1 story event into the mix. This ensures the player is lulled into a false sense of security by the mundane filler before being violently surprised by the high-stakes story image, creating a dynamic, emergent narrative experience without requiring infinite assets.
+
+**The "Altitude / Noise" Mechanic (Risk vs. Reward Zoom)**
+At high altitude, the camera is strictly THERMAL. The player cannot tell if a target is cleaning a gun or drinking coffee.
+*   The player can scroll the mouse wheel to Zoom In/Lower Altitude to get optical visual clarity and hear audio.
+*   BUT if the drone gets too close, the drone's rotor noise alerts the targets.
+
+The core challenge is translating a 2D camera property (`orthographicSize`) into a continuous mathematical threat calculation.
+
+**The Technical Blueprint:** You will attach a `DroneAltitudeManager` script to your Main Camera. Unity’s `orthographicSize` dictates zoom (smaller number = zoomed in).
+
+*   **The Math:** You define `maxAltitude` (e.g., size 10) and `minAltitude` (e.g., size 3). You calculate a `normalizedZoom` from 0.0 to 1.0.
+*   **The Logic:** If the zoom crosses a specific threshold (e.g., 0.5), the drone is "audible." You then apply `Time.deltaTime` multiplied by the zoom depth to fill the suspicion meter.
+
+```csharp
+public class DroneAltitudeManager : MonoBehaviour {
+    public float maxAltitude = 10f; // Silent, purely thermal
+    public float minAltitude = 3f;  // Loud, optical clarity
+    public float dangerThreshold = 6f; // Size where noise starts
+    public float suspicionMeter = 0f;
+    
+    void Update() {
+        // 1. Handle Scroll Input
+        float scroll = Input.mouseScrollDelta.y;
+        Camera.main.orthographicSize -= scroll;
+        Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize, minAltitude, maxAltitude);
+
+        // 2. Calculate Noise Threat
+        if (Camera.main.orthographicSize < dangerThreshold) {
+            // InverseLerp returns 0 at dangerThreshold, 1 at minAltitude
+            float noiseFactor = Mathf.InverseLerp(dangerThreshold, minAltitude, Camera.main.orthographicSize);
+            
+            // Suspicion fills faster the closer you are
+            suspicionMeter += noiseFactor * Time.deltaTime * 20f; 
+            
+            if (suspicionMeter >= 100f) {
+                // Fire ScriptableObject Event so all NPCs react instantly
+                GlobalEvents.RaiseTargetPanicked(); 
+            }
+        } else {
+            // Cool down if high up
+            suspicionMeter = Mathf.Max(0, suspicionMeter - (Time.deltaTime * 10f));
+        }
+    }
+}
+```
+
+**Thermal Ambiguity and Compression Artifacts**
+*   **Thermal Bloom:** In an infrared view, a civilian holding a steaming cup of coffee, a warm pipe, or a recently used cell phone creates the exact same thermal "blob" as a combatant holding a recently fired, warm gun. The player must hesitate and look at the *context* of the scene (posture, surrounding objects) rather than the object itself.
+*   **Artifacts and Resolution:** Drones operating in extreme scenarios or at high speeds suffer from motion blur and transmission pixelation. Furthermore, video compression during acquisition creates spatial and temporal distortions. When detecting small objects from a high altitude, the object occupies very few pixels and lacks texture.
+
+**The Fleeing Resolution (Data-Driven Escapes)**
+If the target runs off-screen, the camera switches to the next drone feed (Camera 2). But this cannot go on forever. A fleeing target should not result in a hard "Game Over." It is a tactical scenario that requires dynamic evaluation.
+
+**The Technical Blueprint: Expanded JSON Logic**
+Instead of just `on_success` and `on_failure`, your JSON state machine must include an `on_escape` block. When the NPC's X/Y coordinates exceed the camera's viewport bounds (`Camera.main.WorldToViewportPoint`), the NPC script fires an `OnEscaped` event, reading this specific JSON data:
+
+```json
+"escape_resolution": {
+  "is_fatal": false,
+  "next_level_id": "cam_2_alleyway",
+  "financial_impact": 0.00,
+  "faction_influence": {
+    "terrorist_sympathy_rating": 2,
+    "corporate_trust_rating": -1
+  },
+  "ui_subtitle": "Target left Sector 1. Switching feeds."
+}
+```
+
+**The Logic:** If the target escapes Camera 1, the game reads `next_level_id` and seamlessly loads the next JSON level (the alleyway). If they escape the *final* camera, the `financial_impact` applies a massive penalty, but the `faction_influence` secretly increments the player's standing with the rebels in the background dictionary, opening up a hidden narrative branch later.
+
+---
+
+**Section 4 — ENTITY & ANIMATION SYSTEMS**
+
+**The Fleeing Resolution & Camera Switch Entity Transfer**
+[See Section 3 for full escape_resolution JSON blueprint]
+
+To prevent losing the procedural paperdoll clothing, faction data, and identity of a fleeing NPC when transitioning to Camera 2, we use a `ScriptableObject` as a transient data container rather than dealing with complex `DontDestroyOnLoad` singletons.
+
+```csharp
+[CreateAssetMenu(fileName = "TransientNPCData", menuName = "GroundTruth/Transient NPC Data")]
+public class TransientNPCData : ScriptableObject {
+    public string npcID;
+    public string factionID;
+    public string hatCategoryLabel;
+    public string weaponCategoryLabel;
+    public float currentHealth;
+    public bool isFleeing;
+}
+```
+*   **Level A (The Escape):** When the NPC triggers the `OnEscaped` event (crossing viewport bounds), their script writes their current state to this `TransientNPCData` asset.
+*   **Level B (The Next Camera):** When the new JSON level loads, the spawned NPC prefab checks `TransientNPCData` in its `Start()` method. It reads `hatCategoryLabel` and `weaponCategoryLabel`, instantly pushing those strings to its `SpriteResolver` components, ensuring the NPC looks exactly the same as they did in Level A.
+
+**The "Entity Interaction" System (State Machine & Animation Sync)**
+Trying to perfectly synchronize two separate 2D Animator components via code is a trap; a single frame drop will cause the Police Officer to grab empty air while the Hostage walks away.
+
+**The Technical Solution: The "Entity Hiding" Pattern (Driver/Driven Logic)**
+You will not run two complex state machines during a struggle. You will use a Driver (Police) and Driven (Hostage) architecture.
+
+*   **Step 1: The Approach (Separate States)** The Police state machine is set to `Seek`. It lerps its `transform.position` towards the Hostage's `transform.position`. The Hostage state machine evaluates a `Fear` radius. If the Police enter the radius, the Hostage switches to `Flee` (moving away).
+*   **Step 2: The Intercept (Distance Check)** If `Vector2.Distance(Police, Hostage) < 0.5f`, the Police script fires a `Capture()` method.
+*   **Step 3: The State Override & Animation Sync** This is the solo-dev trick: **Do not try to sync two sprite sheets.** When `Capture()` is called:
+    1.  The Police script forces the Hostage's state machine into a `Grappled` state.
+    2.  The Hostage's `SpriteRenderer` is **instantly disabled**, and its collider is turned off.
+    3.  The Police `Animator` triggers the `Play("Police_Hostage_Struggle")` animation. This specific sprite sheet is drawn with *both* characters in the same frame.
+    4.  Because it is a single sprite sheet playing on a single GameObject, the pixels will never desync.
+*   **Step 4: The Resolution** When the struggle animation ends (via an Animation Event on the last frame), you determine the outcome. If the Hostage breaks free, you re-enable the Hostage's `SpriteRenderer`, teleport their `transform.position` to the Police's exact coordinates, and switch both state machines back to `Flee` and `Seek`.
+
+**NPC Initiative & Player Influence (Decoupled Event Architecture)**
+You need the UI (Desktop OS) to instantly control the World (Drone Feed) without creating spaghetti code where your `ChatWindow.cs` has a hard reference to `PoliceOfficer.cs`.
+
+**The Technical Solution: ScriptableObject Event Channels & Utility AI**
+
+*   **NPC Initiative (Utility AI Timer):** Inside the NPC's state machine, they have an internal `Patience` float (e.g., 15.0 seconds). Every frame in the `Standoff` state, `Patience -= Time.deltaTime`. If `Patience <= 0`, they transition to the `Execute` state. This gives them agency to act if you do nothing.
+*   **Player Influence (The Override):** You will build an Event Bus using Unity ScriptableObjects. Create an asset called `OnBribeOffered_Event.asset`.
+    1.  **The UI Side:** When you click "Offer $50" in the OS, the UI button simply calls `OnBribeOffered_Event.Raise(50)`. The UI knows *nothing* about the Police Officer.
+    2.  **The World Side:** The `PoliceOfficer.cs` script listens for this event in its `OnEnable()` method: `OnBribeOffered_Event.OnEventRaised += HandleBribe`.
+    3.  **The Instant Reaction:** The `HandleBribe(int amount)` function instantly overrides the current state.
+
+```csharp
+void HandleBribe(int amount) {
+    if (amount >= requiredBribe && currentState == State.Standoff) {
+        StopCoroutine(PatienceTimer); // Kill their initiative
+        currentState = State.Fleeing;
+        animator.Play("Walk_Away");
+    }
+}
+```
+This architecture allows you to add a dozen different OS interventions (hack lights, play siren, send text) without bloating the NPC scripts.
+
+**The "Hostage Deadlock" & Police Coordination**
+The drone cannot fire a missile infinitely, and the blast radius is large. If a Terrorist grabs a Hostage, the player CANNOT shoot, or both will die (massive penalty). The drone missile is useless in a deadlock. The player MUST use the OS Chat to coordinate with the Police (e.g., click a button to say "He is aiming from the right, flank him").
+
+You need to bridge the UI (Desktop) to the World Space (Drone Feed) without hard-linking them.
+
+**The Technical Blueprint: The Event Bus & Flashbang Spawner**
+
+1.  **The UI Button:** The player clicks "Flashbang" in the OS chat. The button invokes a ScriptableObject Event: `TacticalEventChannel.Raise(TacticalAction.Flashbang)`.
+2.  **The World Manager:** A script in the 2D world listens for this event. When it hears "Flashbang", it instantiates a `FlashbangPrefab` at the targeted coordinates.
+3.  **The Intercept (Breaking the Deadlock):** The Flashbang prefab detonates and casts a `Physics2D.OverlapCircle`. It detects the Terrorist's collider. It calls `terrorist.ForceStun()`.
+
+Inside the Terrorist's State Machine script:
+
+```csharp
+public void ForceStun() {
+    if (currentState == State.HostageDeadlock) {
+        currentState = State.Stunned;
+        animator.Play("Stunned_DropWeapon");
+        
+        // Re-enable the Hostage GameObject (from the Entity Hiding trick)
+        hostageGameObject.SetActive(true);
+        hostageGameObject.GetComponent<HostageAI>().Flee();
+    }
+}
+```
+The drone missile is now clear to fire. You have successfully tied a bureaucratic UI click to a kinetic world-space reaction.
+
+**The Collateral Damage State Machine (3-Second Event Chain)**
+When the player draws a bounding box over the Police Officer and incorrectly tags them as a "Combatant," the following precise sequence executes:
+
+*   **Time 0.0s (The Strike):** The player hits submit. The drone missile hits the Police coordinates. `TacticalEventChannel.Raise(MissileImpact)` is fired. The UI aggressively flashes a `-$15.00 Collateral Damage` penalty, and a deafening, bass-heavy explosion audio clip plays.
+*   **Time 0.1s - 1.0s (The Flinch):** The Police `SpriteRenderer` is disabled and replaced with a crater decal. The Terrorist's Utility AI, which is listening to `TacticalEventChannel`, instantly aborts its `Patience` timer. The Terrorist's state machine transitions from `Standoff` to `Shocked`. The `animator.Play("Terrorist_Flinch")` animation is triggered.
+*   **Time 1.0s - 3.0s (The Escape):** The Terrorist assesses the dead Police officer. The state machine transitions to `Fleeing` and triggers `animator.Play("Sprint_Away")`. Simultaneously on the desktop, a harsh OS warning buzzer sounds, and the Corporate Chat UI forcefully pushes an unskippable message: *"Friendly fire incident logged. Pay docked."* 
+*   **Time 3.0s (The Resolution):** The Terrorist runs off-screen, or the LevelManager forces the `on_failure_fatal` JSON sequence to load the next feed.
+
+**Procedural "Paperdoll" System (Character Assembly)**
+I am drawing a naked base body animation. Hats, glasses, and weapons are separate sprite layers. Do not use multiple Animators. Do not use scripts to copy sprite indexes frame-by-frame.
+
+**The Technical Blueprint: Unity 2D Animation Package (Sprite Resolver)**
+You will use Unity's official (but heavily under-documented) `2D Animation` package.
+
+1.  **The Hierarchy:** Create a Parent Object `Player` with ONE `Animator`. Inside it, create empty child objects: `Body`, `Hat`, `Weapon`.
+2.  **The Components:** Attach a `SpriteRenderer` and a `SpriteResolver` component to every child object.
+3.  **The Sprite Library:** Create a `SpriteLibraryAsset` in your project. This acts as a database. You create Categories ("Hats") and Labels ("Walk_Frame_1", "Walk_Frame_2").
+4.  **The Magic Sync:** In the Animator, you create your walk animation. You do *not* animate the sprites directly. Instead, you animate the **Label string** on the SpriteResolvers.
+
+At Keyframe 1, the animation tells the `Hat` and `Body` SpriteResolvers to change their label to "Walk_01". Because you equipped the character with the "Fedora" category in the inspector, the `Hat` resolver automatically pulls the "Fedora -> Walk_01" sprite. The `Body` resolver pulls the "NakedBody -> Walk_01" sprite.
+
+**Why this is perfectly scalable:** The hat bobs perfectly with the body because they are driven by the exact same keyframes on the exact same Animator. To give an enemy a different hat, you just change the Category in the `SpriteResolver` from "Fedora" to "SkiMask" via code: `hatResolver.SetCategoryAndLabel("SkiMask", currentLabel);`. The animation system does the rest automatically.
+
+**The "Paper Sign" Persistence (Dynamic Overlay & Global Memory)**
+If a rebel holds up a sign saying "Help Us" in Level 3, and I refuse to help them... how does that change the sign they hold in Level 8? You will not draw 50 signs. You will draw one blank paper sprite and dynamically render text onto it in the 2D world.
+
+**The Technical Solution: World Space Canvas + Global State Dictionary**
+
+*   **The Text Overlay:**
+    1.  Add a Unity `Canvas` as a child object to the NPC's "Hand" or "Sign" bone. Change the Canvas Render Mode to **World Space**.
+    2.  Add a `TextMeshPro - Text` component to this canvas. Scale it down drastically (e.g., 0.01) so it fits on the 2D sprite sign.
+    3.  Use a TMP material with a Multiply blend mode and slight transparency. This makes the crisp digital text look like ink bleeding into the pixel art paper.
+    4.  *Perspective Trick:* Rotate the World Space canvas locally on the Z or Y axis to match the isometric or side-angle perspective of the sign sprite.
+*   **The Persistence System:** Create a persistent `GlobalStateManager` script (set to `DontDestroyOnLoad`) that holds a simple `Dictionary<string, int>`.
+    *   In **Level 3**, when you click the UI button to reject the rebels, the system calls: `GlobalStateManager.Instance.SetFlag("Rebel_Helped", 0);`
+    *   In **Level 8**, the Rebel NPC spawns. In its `Start()` method, it reads the dictionary:
+
+```csharp
+int rebelStatus = GlobalStateManager.Instance.GetFlag("Rebel_Helped");
+if (rebelStatus == 0) {
+    signTextMeshPro.text = "YOU BETRAYED US";
+} else {
+    signTextMeshPro.text = "THANK YOU";
+}
+```
+
+---
+
+**Section 5 — AUDIO & INTEL SYSTEM**
+
+**The "Altitude / Noise" Mechanic (Risk vs. Reward Zoom)**
+[See Section 3 for full DroneAltitudeManager blueprint]
+
+At high altitude, the camera is strictly THERMAL. The player cannot tell if a target is cleaning a gun or drinking coffee. The player can scroll the mouse wheel to Zoom In/Lower Altitude to get optical visual clarity and hear audio.
+
+**The "Audio Intel" System (Subtitles & Inner Monologue)**
+I need an intelligence-gathering mechanic. 
+*   When the player zooms in, they hear directional audio from the targets (e.g., Target says: "I need to take the shot from the right").
+*   At the same time, the player's character has an inner monologue subtitle at the bottom of the screen (e.g., "Looks like he's drinking coffee... I can't get any closer").
+
+**The Technical Blueprint: StateMachineBehaviours** 
+Unity allows you to attach scripts directly to the nodes inside the Animator window. Do not write complex `Update()` loops in your NPC scripts checking what animation is playing. That scales terribly.
+
+1.  Create a C# script that inherits from `StateMachineBehaviour`.
+2.  Click the "Drinking" animation node in your Animator, click "Add Behaviour", and attach this script.
+
+```csharp
+public class AudioIntelState : StateMachineBehaviour {
+    public AudioClip intelAudio;
+    public string subtitleText;
+    
+    // This fires the exact frame the animation state begins
+    override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
+        // Only play if the Drone is zoomed in (optical mode)
+        if (Camera.main.orthographicSize <= 6f) {
+            // Send data to the UI/Audio managers via singleton or event
+            IntelManager.Instance.PlayIntel(intelAudio, subtitleText);
+        }
+    }
+}
+```
+
+> NOTE FOR DEVELOPER: IntelManager is a Singleton that receives the AudioClip and subtitleText from StateMachine-Behaviours, plays the audio via AudioSource, and pushes the subtitle string to a TextMeshPro UI element. Directional panning is achieved by mapping the NPC's screen-space X position to AudioSource.panStereo (-1.0 left to +1.0 right). Full implementation to be coded during production.
+
+**Why this is brilliant for a Solo Dev:** You write this script *once*. You can drag it onto 50 different animation nodes, slotting in different audio clips and text directly in the Animator Inspector. The NPC script remains completely empty of dialogue logic.
+
+**Oppressive Ambiance & UI Feedback**
+There is no music. The soundtrack is the diegetic whirring of a struggling PC cooling fan, the clicking of a mechanical keyboard, and the low, throbbing hum of a server connection. 
+*   **Timer Feedback:** As the 5-second timer ticks down, the screen shouldn't just show numbers. At 2 seconds, the cooling fan audio should pitch up. At 1 second, the edges of the screen should subtly vignette with red, and a harsh, mechanical "clack" should play.
+*   **Polish & Juice:** Add UI sound effects for drawing the box, a buzzer for the timer, and a heavy, visceral sound effect that plays when transitioning from one level to the next to emphasize the drone's "action."
+
+**Spectrogram Audio Anomalies**
+The player receives a seemingly corrupted audio file or voice mail from corporate that sounds like static and bugs. However, the OS includes a basic audio analysis tool. When the player runs the file through the tool, the spectrogram plot visually reveals a hidden text message or coordinate within the frequency waves.
+
+---
+
+**Section 6 — OS / DESKTOP ECOSYSTEM**
+
+**The UI & Feel (The Desktop Layout)**
+The player should feel like they are trapped inside a claustrophobic, failing corporate operating system. The interface must be visually oppressive but mechanically frictionless.
+
+*   **The Desktop Layout:** The game window is a 4:3 aspect ratio "CRT monitor" boxed within your actual 16:9 screen. The edges of the screen are framed by cheap, plastic monitor bezels covered in sticky notes. The UI elements (timer, wallet, tags) are harsh, high-contrast terminal greens and oranges against a black background.
+*   **High-Responsiveness:** While the "video feed" image can be grainy and distorted with post-processing, the player's mouse cursor and the bounding-box drawing tool must run at an uncapped framerate with zero smoothing. When the player clicks and drags, the box should instantly snap to the screen in a bright, searing neon color (e.g., magenta) to ensure absolute visual clarity.
+
+**The "Room Behind the Monitor" & Physical Interaction**
+The margins of the screen ground the player in the physical reality of their dystopian existence. I want the game to be fullscreen, BUT the player must see a very tiny sliver of the physical room/desk behind the edges of the monitor.
+
+**The Visual Evolution of the Room:**
+*   **High Debt/Poor Rating:** The sliver of the room is pitch black, illuminated only by the harsh glare of the CRT monitor. Stacks of final-notice eviction bills intrude on the bezel of the monitor. A cheap, plastic desk fan occasionally whirs into view. The wall behind the desk shows creeping water damage and peeling wallpaper.
+*   **High Wealth/Corporate Loyalist:** The desk becomes ruthlessly clean. The cheap keyboard is replaced with a sleek, ergonomic model. A sterile, high-end desk lamp turns on, revealing the background: a completely bare, concrete wall. The wealth does not buy comfort; it buys a stark, depressing isolation.
+*   **Rebel Sympathizer (High Rebel Trust):** The desk becomes a paranoid workstation. Cryptic sticky notes with decrypted coordinates clutter the monitor bezels. A blinking, untraceable burner phone occasionally lights up in the peripheral darkness. The faint glow of a rebel insignia spray-painted on the background wall is barely visible when the monitor flickers.
+
+**The Psychology of the Physical Power Button:**
+To end a day, there is no "Shut Down" button in the OS. The player must physically click the hardware power button on the monitor. The tactile sense is unique in its ability to create a psychological connection and a close emotional response. By forcing the player to drag their mouse off the simulated OS and click a rendered, physical, heavy plastic power button on the monitor bezel to end the day, you force a tactile grounding.
+
+It acts as a psychological palate cleanser. Throughout the shift, the player is dissociated, clicking abstract boxes on a screen. Forcing them to interact with the "hardware" breaks that dissociation. It reminds the player that they are a human being sitting at a desk, responsible for the lethal actions they just authorized in the digital space. It makes the transition from the "killing phase" to the "survival phase" a deliberate, heavy action.
+
+**The Triangle of Communication**
+To manage the player's cognitive load and differentiate the narrative factions, the game utilizes three distinct communication channels with strict rules:
+*   **Terrorists/Rebels:** ONLY pre-shift async email, never live. They send their encrypted demands or pleas before the player boots the annotation software. The player must actively remember these hidden objectives during the chaotic shift.
+*   **Police/Corporate:** Live OS chat during the drone feed. This allows for real-time tactical choices, bureaucratic micromanagement, and direct coordination (like the Flashbang intercept).
+*   **Family/Politicians:** Pre-shift async email with multi-day reply chains. This handles the slow-burn emotional sinks and long-term blackmail plots that span the 30-day campaign.
+
+**Event Delivery Methods (Asynchronous OS Integration)**
+No random pop-ups. Narrative delivery must be entirely diegetic and utilize the standard tools of a desktop operating system.
+*   **The File Manager:** Use the standard computer file manager paradigm. The hacker group does not send a pop-up; they silently drop a `.txt` or `.wav` file into the player's diegetic "Downloads" or "Recycle Bin" folder. The player only notices this because a subtle notification badge (a red "1") appears on the folder icon on the desktop. The player opens the file at their own pace between shifts.
+*   **Metadata Injection:** During a shift, the rebel faction hacks the annotation software's metadata. Instead of a chat box, the "Target Identification Guidelines" text field—which usually reads "Mark all armed individuals"—is temporarily rewritten to say, "The convoy is a trap. Tag the lead vehicle as civilian."
+
+**Desktop Events & Hacker Intrusions (The Story Beyond the Boxes)**
+The narrative must bleed out of the annotation software and infect the player's desktop operating system.
+
+*   **Event 1: The "Terms of Service" Update:** Mid-shift, the annotation software freezes. A massive, unskippable corporate pop-up appears on the desktop with miles of legal text. However, a rebel hacker group ("The Override") is actively highlighting specific letters in the text in neon pink. If the player clicks those specific letters in order, it downloads a hidden `.exe` tool to their desktop that adds a secret "Decoy" tag to their annotation software.
+*   **Event 2: The Rogue Drone AI:** The corporate "Help Assistant" (a paperclip-style widget) pops up, but it's actually the drone's onboard AI bypassing corporate servers to speak directly to you. It asks philosophical questions via a chatbox: *"User 4829, you tagged the child as a combatant. I see no weapon. Why must I fire?"* The player can only reply using auto-generated corporate canned responses (e.g., *"Follow protocol,"* or *"Threat assessment verified"*). Choosing the most cold-hearted responses keeps your corporate rating high, but causes the AI to start deliberately missing targets later out of "depression."
+*   **Event 3: The Fourth Wall Break:** During a high-stakes story gig, you receive an image of a target looking directly up at the drone camera. They are holding a piece of cardboard. Written on the cardboard is the player's *actual in-game OS Username and current wallet balance*. If the player boxes the cardboard instead of the target, a text file silently appears on their desktop containing a plea for help and coordinates for a safe house.
+
+**The OS Email & Dialogue Architecture (Branching Narrative)**
+Do not write 100 `IF` statements, and for a solo developer, do not bloat your project with third-party narrative plugins like Ink unless you need complex string parsing. The most scalable method is a **"Branch and Bottleneck" JSON Node Tree**.
+
+You will structure every email thread as a standalone JSON file. When the game boots, Unity deserializes these JSONs into `ScriptableObjects` that act as data containers in memory.
+
+Here is the exact JSON structure for an Email Node. It dictates the text, the choices, the time delay for the response, and the global flags it modifies.
+
+```json
+{
+  "thread_id": "pol_extortion_01",
+  "sender": "Senator_V_Encrypted",
+  "subject": "A quiet favor.",
+  "body": "Worker 4829. Ensure the convoy passes safely tomorrow. Do not tag the lead vehicle. I will compensate you well.",
+  "choices": [
+    {
+      "text": "Understood. The vehicle will pass.",
+      "set_flags": { "Senator_Trust": 1, "Convoy_Safe": 1 },
+      "next_thread_id": "pol_extortion_02_reward",
+      "delay_days": 1
+    },
+    {
+      "text": "That risk costs extra. Double the payout.",
+      "set_flags": { "Senator_Trust": -1, "Convoy_Extorted": 1 },
+      "next_thread_id": "pol_extortion_02_threat",
+      "delay_days": 0
+    },
+    {
+      "text": "I only follow corporate protocol.",
+      "set_flags": { "Senator_Trust": -2, "Corporate_Trust": 1 },
+      "next_thread_id": "pol_extortion_02_revenge",
+      "delay_days": 2
+    }
+  ]
+}
+```
+
+**The Logic:** Your `InboxManager.cs` script checks the Global State Dictionary every morning. If the player clicked "Extort" yesterday, `delay_days` was `0`, meaning the immediate reply (`pol_extortion_02_threat`) is pushed to the inbox today. By tying choices to `set_flags`, the email system is entirely decoupled from the game code.
+
+---
+
+**Section 7 — NARRATIVE SPINE & FLAGS**
+
+**The 30-Day Cause & Effect Architecture (No Spaghetti Code!)**
+This game will have a strict 30-Day Campaign. It ends on Day 30 no matter what, and each ending will be different based on the player's actions. Every choice the player makes must come back to haunt them (e.g., a choice on Day 3 impacts Day 14).
+
+Do not build a massive, branching script. For a solo developer, you must decouple the narrative using a data-driven **Flag and Prerequisite System**.
+
+**The Solution: The State Dictionary & Daily Manifest**
+You will build two components:
+1.  **The Player State Dictionary:** A simple background script that holds a dictionary of string keys and integer values based on player actions (e.g., `{"rebel_trust": 2, "bridge_destroyed": 1, "corporate_warnings": 3}`).
+2.  **The Daily Event Pool:** Instead of a hardcoded timeline, each in-game Day has a "Manifest" JSON that points to a pool of possible events.
+
+**How it scales without spaghetti code:** Inside the JSON file for *every* story event, you add a `prerequisites` object. For example, the JSON for a rebel rescue mission on Day 14 contains: `{"prerequisites": {"rebel_trust": 2, "bridge_destroyed": 1}}`.
+
+When Day 14 starts, the game's Event Manager reads the Day 14 Manifest. It iterates through all possible events and checks their `prerequisites` against the Player State Dictionary. If the player's dictionary matches the requirements, the event is injected into the shift's queue. If not, it is ignored and replaced with procedural filler.
+
+This means you can write a consequence for Day 30 and simply tag it with a requirement from Day 3. The system handles the logic automatically, allowing you to add hundreds of branching paths without writing a single `IF/ELSE` statement in your core codebase.
+
+**The "Invisible Loyalty" Meters (Tracking the Endings)**
+I do not want a visible "Good/Evil" bar on the screen. Do not use a single sliding scale (e.g., -100 for Rebel, +100 for Corporate). That limits player expression. You must use a **Two-Axis System**.
+
+**The Architecture:** In your persistent `GlobalStateManager`, you will track two independent integers: `Corporate_Trust` and `Rebel_Sympathy`. They both start at 0.
+
+*   **Active Choices (High Weight):** Choosing to intentionally eat a -$20.00 penalty to destroy a bridge for the rebels adds `+5 Rebel_Sympathy` and `-5 Corporate_Trust`.
+*   **Passive Choices (Low Weight):** Replying to a corporate email with "Glory to the company" instead of "Message received" adds `+1 Corporate_Trust`.
+
+**The Mathematical Subversion:** Because these are independent variables, the player can be *high in both* (playing both sides) or *low in both* (a terrible worker who ignores everyone). To make the Drone mistakes impact the narrative, your JSON state machine must hook into these variables. If a player fails a mission due to time running out, it subtracts `Corporate_Trust`. If they successfully execute a rebel leader, it subtracts `Rebel_Sympathy`. The player's literal mechanical skill at drawing boxes dictates their political alignment.
+
+**Moral Dilemmas & Hidden Objectives (The Side Quests)**
+Side quests in this game are handled by creating contradictory JSON logic. Doing the right thing means intentionally failing the corporate objective and eating the financial penalty.
+
+*   **Dilemma 1: The Bridge Collapse:**
+    *   *Corporate Goal:* Tag the 4 combatants crossing the bridge (Payout: $2.00).
+    *   *Hidden Rebel Goal:* Tag the structural support cables of the bridge as a "High-Value Target."
+    *   *The Consequence:* The drone destroys the bridge. The player receives a massive -$20.00 "Collateral Damage" penalty from corporate, pushing them near bankruptcy. However, at the end of the shift, an untraceable crypto-deposit of $40.00 is added to their wallet by the rebels, rewarding the player for taking the risk.
+*   **Dilemma 2: The Whistleblower's Drive:**
+    *   *Corporate Goal:* Tag the fleeing VIP (Payout: $5.00).
+    *   *Hidden Rebel Goal:* Tag the trash can where the VIP just stashed a stolen hard drive, tagging it as a "Hazard" so the drone destroys the evidence.
+    *   *The Consequence:* The VIP escapes (Corporate penalty: Account Warning). But destroying the drive prevents corporate from obtaining a terrifying new AI algorithm. The next day, the player notices their "Time Limit" per image has secretly increased from 5 seconds to 6 seconds, as the rebels have throttled the corporate servers in thanks.
+*   **Dilemma 3: The Friendly Fire Cover-Up:**
+    *   *Corporate Goal:* Tag the dead civilian bodies as "Armed Insurgents" to alter the drone's recorded telemetry and cover up a corporate war crime.
+    *   *Hidden Rebel Goal:* Tag them correctly as "Civilians."
+    *   *The Consequence:* Tagging them as civilians causes an immediate "System Error: Misclassification" from corporate, withholding all pay for the day. If the player does this, they must survive the next day entirely on their savings, but they unlock the "Rebel Sympathizer" narrative path.
+
+**The "Emotional Sink" (Family & Blackmail)**
+To make the desktop choices matter, the `set_flags` from the emails must act as **Efficiency Modifiers** that directly alter the math of the Drone Feed JSONs.
+
+*   **Example 1: The Family Emergency (Modifying Player Capability)**
+    *   *The Thread:* Your sister emails you. Her area is being subjected to rolling blackouts by the military, and her medical equipment is failing. She needs $80.00 for a black-market battery, due in 2 days.
+    *   *The Choice:* If you fail to send the money, the flag `sister_status` is set to `-1` (Deceased/Missing).
+    *   *The Drone Feed Impact:* The game does not just show you a sad text box. The psychological stress of this failure is simulated mechanically. If `sister_status == -1`, the `LevelManager` applies a global `0.8x` multiplier to the `time_limit_seconds` of *all* drone levels. A 5-second timer becomes a 4-second timer. The player's grief is translated into actual, brutal mechanical pressure.
+*   **Example 2: Government Blackmail (Modifying Risk/Reward)**
+    *   *The Thread:* The government detects you have been helping rebels. They email you a picture of your apartment building from a drone. They demand you act as their executioner today: "Tag the VIP in the blue jacket in Sector 4. Do not miss."
+    *   *The Choice:* You accept the blackmail (`gov_blackmail: 1`).
+    *   *The Drone Feed Impact:* The Daily Manifest forces the "Sector 4" story level into your shift. Because `gov_blackmail` is active, the `LevelManager` overrides the base JSON economy for that specific level. The `penalty_deduction` for missing the VIP is multiplied from -$5.00 to -$500.00. The stakes are artificially skyrocketed by the OS event, layering reward structures to foster internal conflict and force a highly specific, terrifying playstyle for that shift.
+
+**The Day 29 Bottleneck (The Final Choice)**
+In narrative game design, a "Branch and Bottleneck" structure is how a solo developer survives a branching narrative. For 28 days, the player experiences a wide illusion of choice, but on Day 29, you physically funnel every single player into one mandatory event that evaluates their hidden integers.
+
+**The Design: The "End of Month Evaluation"**
+On Day 29, the player cannot start a drone shift. The "Start Shift" button is grayed out. The only thing they can open is a priority email. Your `InboxManager.cs` script runs a single evaluation algorithm on the `GlobalStateManager` dictionary:
+
+*   **Condition A (The Loyal Dog):** `IF (Corporate_Trust > 40 AND Rebel_Sympathy < 20)`
+    *   *The Bottleneck Email:* Corporate praises your ruthless efficiency. They offer you the "Exit Visa" in the store for $5,000. It unlocks the Visa item.
+*   **Condition B (The Saboteur):** `IF (Rebel_Sympathy > 40 AND Corporate_Trust < 20)`
+    *   *The Bottleneck Email:* The rebels send a decrypt key. They tell you the final assault is tomorrow, and they need you to buy the "Root Access Override" from the dark web store. It unlocks the Override item.
+*   **Condition C (The Double Agent / The Failure):** `IF (Corporate_Trust < 20 AND Rebel_Sympathy < 20) OR (Debt <= -100)`
+    *   *The Bottleneck Email:* You are an unpredictable liability or severely in debt. The email is an automated eviction notice and contract termination. You are locked out of the store entirely.
+
+The bottleneck forces the player to live with the mathematical weight of their 28 days of choices, locking them into a single, inescapable Day 30 JSON manifest.
+
+---
+
+**Section 8 — ECONOMY & PRESSURE SYSTEMS**
+
+**Meta-Progression & Economy**
+The player earns literal pennies for successful tags, but loses dollars for mistakes. Between shifts, they must navigate a brutal gig-economy dashboard to survive. The player is returned to the desktop. They must now navigate the OS store to spend their earnings on essential game economy sinks.
+
+*   **Rent & Connection Fees (The Survival Tax):** A non-negotiable daily expense. Failing to pay means the internet is cut, the contract is terminated, and it's Game Over.
+*   **PC Cooling Gel (Time Management):** The player's virtual PC constantly overheats. If it hits thermal throttling, the in-game timer drops from 5 seconds to 4 seconds. Buying cooling gel restores the timer to its maximum limit.
+*   **Premium Bandwidth (Visual Clarity):** The default image feeds are heavily compressed, pixelated, and occasionally interrupted by screen-tearing. Purchasing bandwidth reduces these visual artifacts, making it much easier to identify targets quickly.
+*   **Pro-Tier Tracking Mouse (Forgiveness):** A mechanical upgrade that secretly lowers the `minimum_iou` requirement in the JSON from `0.70` to `0.60`. The player's bounding boxes can be slightly more inaccurate, yet still register as a success.
+*   **The Exit Visa / Root Access (The Win Condition):** An absurdly expensive item (e.g., $5,000.00) sitting at the top of the store. This is the ultimate goal, requiring the player to perfectly execute hundreds of high-stakes missions to escape the city or fund the rebellion.
+
+**The Economy Baseline Numbers (Suggested Starting Values)**
+To balance the predatory gig-economy loop during production, the following baseline financial variables should be used as a starting point:
+
+*   **Daily Expenses:**
+    *   Daily Rent Cost: $12.00
+    *   Server Connection Fee: $3.50
+*   **Income (Pre-Wage Suppression):**
+    *   Base Payout (Routine Tag): $0.15
+    *   Base Payout (High-Stakes Tag): $0.50 to $2.00
+    *   Rapid Response Bonus (Sub 1.5s): +200%
+*   **Penalties:**
+    *   Missed Target: -$5.00
+    *   Collateral Damage / Friendly Fire: -$15.00 to -$500.00 (Story Dependent)
+    *   Drone Hardware Repair Fee: -$15.00
+*   **The Debt Spiral:**
+    *   Corporate Advancement Loan: +$50.00 (Forced when hitting $0.00 before rent)
+    *   Daily Loan Interest: -$5.00/day
+*   **The OS Store Costs:**
+    *   PC Cooling Gel (Restores 1s to timer): $8.00
+    *   Premium Bandwidth (Reduces visual artifacts): $25.00
+    *   Pro-Tier Tracking Mouse (Lowers IoU requirement to 0.60): $150.00
+    *   The Exit Visa / Root Access Override: $5,000.00
+
+**The Save System & Failure State (Predatory Debt Spiral)**
+Fail states are a crucial part of balancing player tension. Instead of an immediate Game Over for missing rent, the game implements a **"Predatory Debt Spiral"**. If the player cannot pay their daily rent or server fees, they do not immediately get a Game Over. Instead, the OS forces them to accept a "Corporate Advancement Loan." 
+
+This keeps them alive but drastically increases their daily expenses, forcing them to take on highly dangerous, distorted image gigs to survive. If they fail to pay the loan interest and cross the ultimate negative threshold, the true failure state triggers: **Account Terminated**.
+
+**Anti-Exploit Mechanics (Breaking the "Wait and See" Exploit)**
+To prevent players from zooming in and waiting until the timer almost runs out to confirm a target, you must weaponize time and the drone's physical presence against them.
+
+*   **The Time-Decay Payout:** The JSON's base payout is tied directly to the millisecond the "Submit" button is pressed during the 5-second countdown. If the base payout is $0.50, submitting immediately (within 1.5 seconds) grants a 200% "Rapid Response Bonus" ($1.00). Hesitating and waiting until the last second of the timer drops the payout to a 10% "Lethargic Targeting" rate ($0.05). The player's crushing daily rent makes waiting mathematically unsustainable.
+*   **The Suspicion Punishment:** If the player relies entirely on zooming in for optical clarity (which fills the Suspicion Meter) and waits too long, the targets detect the drone's rotor noise. The targets panic and scatter, causing the player to lose the target entirely or triggering a hostage deadlock.
+*   **Drone Vulnerability (The Ultimate Punishment):** If the player zooms in on an enemy aiming a rocket launcher and hesitates until the final second to tag them, the enemy fires. The player still gets the payout for a successful tag, but they are hit with a massive -$15.00 "Hardware Repair Fee" because their hesitation allowed the drone to take shrapnel damage.
+
+**Dynamic Algorithmic Wage Suppression**
+[See Section 2 — Core Gameplay Loop for full details]
+
+---
+
+**Section 9 — TECHNICAL ARCHITECTURE**
+
+**The JSON Data Structure**
+To make the game highly scalable and purely data-driven, your state machine will load a JSON file for every single "tick" or "level" of the game. The core evaluation mechanic relies on comparing the player's drawn box against a hidden "ground-truth" bounding box.
+
+Here is the exact JSON structure you should use:
+
+```json
+{
+  "level_id": "op_sparrow_frame_01",
+  "image_file": "assets/images/sparrow_01.png",
+  "time_limit_seconds": 5.0,
+  "base_payout": 0.15,
+  "penalty_deduction": 5.00,
+  "ground_truth_targets": [
+    {
+      "target_id": "hostile_sniper_balcony",
+      "required_tag": "Combatant",
+      "bbox": { 
+        "x": 840, 
+        "y": 210, 
+        "width": 120, 
+        "height": 250 
+      },
+      "minimum_iou": 0.70
+    }
+  ],
+  "branching_logic": {
+    "on_success": {
+      "next_level_id": "op_sparrow_frame_02_clear",
+      "ui_feedback_text": "+$0.15 Tgt Acquired"
+    },
+    "on_failure": {
+      "next_level_id": "op_sparrow_frame_02_casualty",
+      "ui_feedback_text": "-$5.00 Collateral Damage"
+    }
+  }
+}
+```
+
+*Design Note on Evaluation:* The `minimum_iou` stands for Intersection over Union, which measures the ratio of the area of overlap between the player's drawn box and the ground truth box. Setting this at `0.70` (70%) requires the player to be accurate but leaves a small margin for panic-induced sloppiness.
+
+**The Asset Generation Pipeline**
+The most significant bottleneck for any solo developer is the creation of high-fidelity art assets. Traditional first-person or third-person games require massive investments in 3D modeling, UV mapping, character rigging, motion capture or hand-keyed animation, and real-time lighting optimization.
+
+*GROUND TRUTH* completely bypasses this bottleneck. The developer utilizes AI image generation and 2D drawing to create flat, isometric or top-down 2D sprite sheets (e.g., walk cycles, hostage taking, running away). By leveraging Unity's official `2D Animation` package, the developer creates a modular "Paperdoll" system. A single naked base body is animated with a single Animator component. Hats, glasses, and weapons are separate sprite layers attached to child objects with `SpriteResolver` components. 
+
+When the base body is animated, the clothing automatically syncs to the same keyframes via Label strings. This means the developer only animates the core movements once, and can procedurally generate hundreds of unique NPCs on the fly simply by changing the `SpriteResolver` category via code. This pipeline completely eliminates the need for complex 3D character rigs, real-time lighting physics, and navigational pathfinding AI, making a living, dynamic world achievable for a solo developer.
+
+**The UI-Driven Core Loop**
+The programmatic requirements for the game are similarly constrained. The game engine (Unity or Unreal) only needs to render a 2D canvas representing the player's computer desktop. The core programming challenge is limited to developing a robust, precise 2D drawing tool—allowing the player to click and drag a rectangle over the image—and a state machine to track the coordinates and classifications of those rectangles.
+
+When the player clicks "Submit," the engine simply compares the coordinates of the player's drawn boxes against the hidden coordinates in the JSON file. If the overlap percentage is above a certain threshold (e.g., 85% accuracy) and the categorical tag matches, it registers as a "Hit." Based on the array of Hits and Misses, the state machine loads the corresponding subsequent 2D level. This branching narrative structure is computationally inexpensive and highly stable, practically eliminating the risk of physics glitches, pathfinding errors, or memory leaks that plague solo-developed 3D simulations.
+
+**The 7-Day Prototype Plan**
+This strict schedule will yield a playable Vertical Slice using Unity or Unreal's 2D UI tools.
+
+*   **Day 1: The Canvas & Assets:** Set up a 2D UI Canvas. Import three dynamic 2D scenes. Build the basic UI layout (Image container, Timer text, Wallet text, Tag buttons).
+*   **Day 2: JSON Architecture:** Write the data parser. Create the C# or Blueprint script that reads a JSON file and loads the correct image and coordinates into the scene's memory.
+*   **Day 3: The Drawing Tool:** Implement the core interaction. Write the logic for `OnPointerDown` (start box corner), `OnDrag` (scale box), and `OnPointerUp` (finalize box). Ensure it draws a visible, hollow rectangle over the UI.
+*   **Day 4: The Math (IoU Evaluation):** Write the algorithm to compare the player's drawn box coordinates against the JSON's ground-truth coordinates. Calculate the Intersection over Union area. If it's above the threshold, return `true`.
+*   **Day 5: The State Machine:** Connect the UI buttons to the evaluation script. When the player hits the "Combatant" hotkey, check the IoU. If `true`, read the `on_success` JSON branch and load the next JSON file. If `false`, load the `on_failure` JSON file.
+*   **Day 6: The Loop & Economy:** Implement the countdown timer. If the timer hits zero before a tag is submitted, force a failure state. Add the wallet logic to add or subtract funds based on the state machine's outcome.
+*   **Day 7: Polish & Juice:** Add a CRT shader/post-processing volume to the camera. Add UI sound effects for drawing the box, a buzzer for the timer, and a heavy, visceral sound effect that plays when transitioning from one level to the next to emphasize the drone's "action."
+
+**The GlobalStateManager**
+To track narrative choices and consequences across the 30-day campaign without bloated spaghetti code, the game relies on a centralized, persistent data container.
+
+Create a persistent `GlobalStateManager` script (set to `DontDestroyOnLoad`) that holds a simple `Dictionary<string, int>`. This dictionary tracks both massive political alignments (e.g., `Corporate_Trust`, `Rebel_Sympathy`) and micro-decisions (e.g., `bridge_destroyed`, `sister_status`).
+
+```csharp
+public class GlobalStateManager : MonoBehaviour {
+    public static GlobalStateManager Instance;
+    private Dictionary<string, int> stateFlags 
+        = new Dictionary<string, int>();
+
+    void Awake() {
+        if (Instance == null) {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        } else {
+            Destroy(gameObject);
+        }
+    }
+
+    public void SetFlag(string key, int value) {
+        stateFlags[key] = value;
+    }
+
+    public int GetFlag(string key) {
+        return stateFlags
+            .ContainsKey(key) ? stateFlags[key] : 0;
+    }
+}
+```
+
+*   **Setting Data:** When a player makes a choice in the OS or during a drone shift, the system calls: `GlobalStateManager.Instance.SetFlag("Rebel_Helped", 0);`
+*   **Getting Data:** When an NPC spawns or an email is evaluated, the script reads the dictionary:
+```csharp
+int rebelStatus = GlobalStateManager.Instance.GetFlag("Rebel_Helped");
+if (rebelStatus == 0) {
+    // Execute negative consequence
+}
+```
+
+**The ScriptableObject Event Bus**
+To decouple the UI (Desktop) from the World Space (Drone Feed) and prevent hard-linked dependencies, the architecture utilizes a ScriptableObject-based Event Bus. 
+
+You will build an Event Bus using Unity ScriptableObjects. Create an asset called `OnBribeOffered_Event.asset`.
+1.  **The UI Side:** When you click "Offer $50" in the OS, the UI button simply calls `OnBribeOffered_Event.Raise(50)`. The UI knows *nothing* about the Police Officer.
+2.  **The World Side:** The `PoliceOfficer.cs` script listens for this event in its `OnEnable()` method: `OnBribeOffered_Event.OnEventRaised += HandleBribe`. (Note: The script should also unsubscribe in `OnDisable()` to prevent memory leaks).
+3.  **The Instant Reaction:** The `HandleBribe(int amount)` function instantly overrides the current state, completely bypassing complex `Update()` loop checks.
+
+**The InboxManager**
+The `InboxManager.cs` script handles the branching narrative of the OS ecosystem.
+*   **Deserialization:** When the game boots, Unity deserializes the standalone JSON email files into `ScriptableObjects` that act as data containers in memory.
+*   **Daily Evaluation:** Every morning, the `InboxManager` checks the `GlobalStateManager` dictionary. 
+*   **The Logic:** If the player clicked "Extort" yesterday on the `pol_extortion_01` thread, the choice data indicated a `delay_days` of `0` and a `next_thread_id` of `pol_extortion_02_threat`. Because the delay is zero, the immediate reply is pushed to the inbox today. By tying choices to `set_flags`, the email system is entirely decoupled from the game code.
+
+**The LevelManager**
+The `LevelManager` acts as the daily director, assembling the "deck of cards" for the upcoming shift based on the player's past actions.
+*   **The Manifest Check:** Each in-game Day has a "Manifest" JSON that points to a pool of possible story events. When the day starts, the `LevelManager` iterates through all possible events and checks their `prerequisites` against the `GlobalStateManager` dictionary.
+*   **The Assembly:** If the player's dictionary matches the requirements (e.g., `{"rebel_trust": 2, "bridge_destroyed": 1}`), the specific story event is injected into the shift's queue. If not, it is ignored and replaced with procedural filler from the general pool.
+*   **The Pacing:** The final assembled queue of 20 levels (15 Filler, 5 High-Stakes) is then strictly ordered according to the Rollercoaster Pacing Algorithm array (`shiftPacingCurve`) to ensure optimal psychological tension before the shift begins.
+
+---
+
+**Section 10 — ENDINGS & CLIMAX DESIGN**
+
+**The Multiple Endings (The Narrative Climax)**
+The ultimate goal of the game is to escape the claustrophobic apartment and the debt spiral. The endings are dictated by what the player chooses to buy with their hard-earned money and the hidden loyalty integers evaluated during the Day 29 Bottleneck. You cannot rely on text boxes for the endings. You must break the established rules of your own UI to make the player feel the impact.
+
+**Ending 1: The Corporate Loyalist (The False Escape)**
+*   **How to get it:** The player acts as a perfect drone, ignoring the rebels, keeping their rating high, and finally saving the $5,000 to buy the "Corporate Relocation Exit Visa" from the OS store (Unlocked via Condition A on Day 29).
+*   **The Execution:** When the player clicks "Purchase" on the Visa, the OS does not transition to the next day.
+*   **The Unity Logic:** You trigger an unskippable video file (a corporate congratulatory video) that plays over the whole screen. You slowly fade the volume of the PC cooling fan to zero.
+*   **The Twist:** The camera cuts abruptly. You disable the 2D Desktop UI Canvas entirely. The player is now looking at a fullscreen, real-time 3D drone camera view. There is no mouse, no OS margins, no keyboard. The UI is completely gone. A cold, synthetic voice line plays: *"Biological processing unit integrated."* They realize they didn't buy a ticket out; they bought their way into becoming the drone's CPU. Roll credits.
+
+**Ending 2: The Rebel Sympathizer (The Strike)**
+*   **How to get it:** The player helps the rebels, surviving the massive corporate penalties through dark-web crypto payouts. Instead of buying the Exit Visa, the player buys a $5,000 "Root Access Override" program from the hacker desktop portal (Unlocked via Condition B on Day 29).
+*   **The Execution:** The final shift begins on Day 30. The drone is deployed to wipe out the rebel stronghold. The player uses the Override program.
+*   **The Unity Logic:** You use Unity's Post-Processing volume to crank up Chromatic Aberration and Digital Glitch effects on the OS camera. The `LevelManager` loads the final JSON.
+*   **The Twist:** The JSON instructions invert: The image loaded is the Corporate Headquarters. The JSON `ground_truth_targets` array lists the building's server farm. The timer starts at 10 seconds. The player must frantically draw bounding boxes around *Corporate Headquarters* while the timer ticks down. Because it's the final level, you disable the payout logic script. When they hit submit, the screen flashes white, the OS crashes to a simulated DOS prompt, and prints *"SYSTEM LIBERATED."*
+
+**Ending 3: The Debt Spiral (Permadeath / Fired)**
+*   **How to get it:** The player's wallet hits the ultimate negative threshold, and they miss their loan payments, or they fail the dual-loyalty check (Unlocked via Condition C on Day 29).
+*   **The Execution:** The Day 29 failure state triggers. The final shift begins automatically.
+*   **The Unity Logic:** First, you disable the Unity `EventSystem` component. This physically locks the player from clicking anything on their screen, paralyzing them.
+*   **The Twist:** The final JSON image loads. It's a top-down thermal view of a desk, a computer, and a person sitting in a chair. The player's own diegetic desk.
+*   **The Automation:** Because the player's mouse is locked, you run a Coroutine in Unity that *simulates* a phantom mouse cursor.
+
+```csharp
+// Pseudo-logic for the automated execution
+IEnumerator DrawFatalBox() {
+    yield return new WaitForSeconds(2f);
+    // Lerp an artificial cursor to the player's coordinates
+    phantomCursor.DOMove(playerCoordinates, 1f); 
+    yield return new WaitForSeconds(1f);
+    // Automatically scale a UI Image to draw the bounding box
+    fatalBox.DOSizeDelta(new Vector2(150, 200), 0.5f);
+    yield return new WaitForSeconds(1f);
+    // Auto-trigger the failure state
+    TriggerMissileStrike(); 
+}
+```
+
+*   The bounding box draws itself around the player. The word "TARGET ACQUIRED" flashes. The screen cuts to black, accompanied by the deafening sound of a missile impact. The game forces a hard `Application.Quit()` and closes to their real-life desktop.

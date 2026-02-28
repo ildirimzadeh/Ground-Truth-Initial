@@ -1,0 +1,1513 @@
+# MILESTONE VERIFICATION PLAN
+## GROUND TRUTH — For the Non-Technical Project Owner
+
+---
+
+## How to Use This Document
+
+You are the project owner. Your job is to sit in front of the game, follow the numbered steps in each milestone, and compare what you **see on your screen** to what this document says you **should** see. You do not need to understand how anything works. You only need eyes, a mouse, a keyboard, and this document.
+
+**Three possible outcomes for every test:**
+
+- ✅ **PASS** — What you see matches exactly what this document describes.
+- ⚠️ **PARTIAL** — Some parts match, some do not. Write down which step number failed and what you saw instead. Send it to the developer.
+- ❌ **FAIL** — The result is completely wrong, or the game crashes, freezes, or shows an error window. Screenshot it. Send it to the developer.
+
+**About the Debug Overlay:**
+Starting in Milestone 1, the developer will build a small, semi-transparent panel in one corner of the game window. This panel shows you — in plain English — what the invisible systems are doing behind the scenes. You do not need to understand *why* these numbers exist. You only need to confirm they **change at the right time** and **show the right values** when this document tells you to look at them.
+
+The overlay grows with every milestone. New fields are added on top of old ones. Old fields never disappear.
+
+---
+
+---
+
+## MILESTONE 1 VERIFICATION: THE DATA SPINE
+
+### What You Are Testing
+The three invisible foundation systems exist and respond correctly. Nothing looks like a game yet. You will see a plain test screen with buttons and the debug overlay. That is expected.
+
+### Debug Overlay — Fields Present at Milestone 1
+
+```
+╔══════════════════════════════════════════════════╗
+║  DEBUG OVERLAY — MILESTONE 1                     ║
+║                                                  ║
+║  FLAG: [key] = [value]      (last flag changed)  ║
+║  EVENT: [channel name] fired (last event raised) ║
+║  JSON: [filename] loaded     (last file parsed)  ║
+║  PARSE STATUS: OK / ERROR    (last parse result) ║
+╚══════════════════════════════════════════════════╝
+```
+
+---
+
+### Acceptance Tests
+
+**TEST 1.1 — Flag System Works**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Launch the game. A plain test screen appears with several labeled buttons. Look for a button labeled **"Set Flag: rebel_trust = 5"**. | The button exists and is clickable. |
+| 2 | Click the button. | The debug overlay updates to show: `FLAG: rebel_trust = 5` |
+| 3 | Look for a button labeled **"Read Flag: rebel_trust"**. Click it. | A text label on screen shows the number `5`. The overlay still shows `rebel_trust = 5`. |
+| 4 | Look for a button labeled **"Set Flag: rebel_trust = 0"**. Click it. | The overlay updates to: `FLAG: rebel_trust = 0` |
+| 5 | Click **"Read Flag: rebel_trust"** again. | The text label now shows `0`. |
+| 6 | Look for a button labeled **"Read Flag: bridge_destroyed"** (a flag that was never set). Click it. | The text label shows `0`. It does not show an error. It does not crash. The game treats any flag that was never set as zero. |
+
+> **If this goes wrong:** If clicking the "Set Flag" button does not change the overlay text, the GlobalStateManager is not storing data. If clicking "Read Flag" shows nothing, or shows a wrong number, or the game freezes, the flag read/write system is broken. Report which step failed and what appeared instead.
+
+---
+
+**TEST 1.2 — Event Bus Works**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Look for a button labeled **"Raise Test Event"**. | The button exists. |
+| 2 | Click it. | Two things happen simultaneously: (a) The debug overlay updates to show `EVENT: TestChannel fired`. (b) A separate text label on screen reads something like `"Event received!"` or changes color. This label represents a listener that heard the event. |
+| 3 | Look for a second text label marked **"Listener B"**. | This label ALSO updated at the same time as the first one. This proves two separate listeners both heard the same event. |
+
+> **If this goes wrong:** If clicking the button updates the overlay but the listener labels do not change, the event is being raised but nobody is hearing it — the subscription system is broken. If nothing at all changes, the event channel itself is not working. Report exactly which labels changed and which did not.
+
+---
+
+**TEST 1.3 — JSON Parsing Works (Level File)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Look for a button labeled **"Load Level JSON"**. Click it. | The debug overlay updates to show: `JSON: op_sparrow_frame_01.json loaded` and `PARSE STATUS: OK` |
+| 2 | Look at the text labels on screen. You should see at least these fields displayed in plain text: | **level_id:** `op_sparrow_frame_01` |
+| | | **image_file:** a file path string (e.g., `assets/images/sparrow_01.png`) |
+| | | **time_limit_seconds:** a number (e.g., `5.0`) |
+| | | **base_payout:** a number (e.g., `0.15`) |
+| | | **target count:** a number (e.g., `1`) |
+| | | **first target required_tag:** a word (e.g., `Combatant`) |
+| | | **minimum_iou:** a number (e.g., `0.70`) |
+| 3 | Every field shows a real value — no field says "null," "empty," "missing," or "error." | All fields populated. |
+
+> **If this goes wrong:** If `PARSE STATUS` shows `ERROR`, the JSON file is malformed or the parser cannot read it. If any field shows "null" or is blank, that specific field is not being read correctly. Report which fields are blank.
+
+---
+
+**TEST 1.4 — JSON Parsing Works (Email File)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Look for a button labeled **"Load Email JSON"**. Click it. | The overlay updates: `JSON: pol_extortion_01.json loaded` and `PARSE STATUS: OK` |
+| 2 | On-screen labels show: | **thread_id:** `pol_extortion_01` |
+| | | **sender:** `Senator_V_Encrypted` |
+| | | **subject:** `A quiet favor.` |
+| | | **body:** A paragraph of text (not blank). |
+| | | **choice_count:** a number (e.g., `3`) |
+| | | **choice_1_text:** A sentence (e.g., `"Understood. The vehicle will pass."`) |
+
+> **If this goes wrong:** Same as Test 1.3. Report which fields are missing or blank.
+
+---
+
+**TEST 1.5 — JSON Parsing Works (Day Manifest File)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Look for a button labeled **"Load Manifest JSON"**. Click it. | The overlay updates: `JSON: day_05_manifest.json loaded` and `PARSE STATUS: OK` |
+| 2 | On-screen labels show: | **day_number:** `5` |
+| | | **filler_count:** a number (e.g., `8`) |
+| | | **story_event_ids:** a list of IDs (e.g., `op_sparrow_01`) |
+
+> **If this goes wrong:** Same as above.
+
+---
+
+### Milestone 1 Completion Criteria
+
+All five tests pass. The debug overlay correctly reflects every action. No crashes, no blank fields, no error messages visible anywhere on screen.
+
+---
+
+---
+
+## MILESTONE 2 VERIFICATION: THE ANNOTATION ENGINE
+
+### What You Are Testing
+You can now see an actual image on screen, draw a box over it with your mouse, tag it, submit it, and the game tells you whether your box was accurate enough. This looks like a very basic version of the real game — one image at a time, no economy, no desktop.
+
+### Debug Overlay — New Fields Added at Milestone 2
+
+```
+╔══════════════════════════════════════════════════╗
+║  (all previous fields, plus:)                    ║
+║                                                  ║
+║  LEVEL: [level_id]                               ║
+║  TIMER: [seconds remaining]                      ║
+║  BOXES DRAWN: [count]                            ║
+║  LAST IoU: [0.00–1.00] ✓ or ✗                   ║
+║  TAG SUBMITTED: [tag string]                     ║
+║  MATCH: YES / NO / SABOTAGE                      ║
+║  GROUND TRUTH: [x, y, w, h] (hidden box coords) ║
+╚══════════════════════════════════════════════════╝
+```
+
+---
+
+### Acceptance Tests
+
+**TEST 2.1 — An Image Loads From JSON**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Launch the test scene. | An image appears in the center of the screen. It is not a blank rectangle. It is the image file specified in the test level JSON. |
+| 2 | Check the debug overlay. | `LEVEL: op_sparrow_frame_01` (or whatever the test file is named). `GROUND TRUTH:` shows four numbers representing the hidden correct box position. |
+
+> **If this goes wrong:** If you see a blank white or grey rectangle instead of an image, the image file path in the JSON does not match an actual image in the project, or the image is not being loaded. If the overlay shows "LEVEL: null," the JSON did not load.
+
+---
+
+**TEST 2.2 — You Can Draw a Bounding Box**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Move your mouse cursor over the image. | The cursor is visible and responsive. No lag, no smoothing, no delay. |
+| 2 | Click and hold the left mouse button at any point on the image. | A colored rectangle begins to appear at the point where you clicked. One corner is anchored where you clicked. |
+| 3 | While holding the button, drag your mouse diagonally. | The rectangle stretches in real time, following your mouse exactly. It should feel instant — no rubbery or floaty movement. The box should be a bright, high-contrast color (neon magenta, green, or similar). |
+| 4 | Release the mouse button. | The rectangle stays on screen. It does not disappear. The overlay updates: `BOXES DRAWN: 1`. |
+| 5 | Draw a second box somewhere else on the image. | A second rectangle appears. The first rectangle is still visible. The overlay updates: `BOXES DRAWN: 2`. |
+
+> **If this goes wrong:** If no rectangle appears when you click and drag, the drawing tool is not connected to mouse input. If the rectangle appears but is invisible (wrong color, zero opacity), it is a visual issue. If the box disappears when you release the mouse, the finalization step is broken. If the box appears but moves sluggishly or with visible delay, the input smoothing is not disabled.
+
+---
+
+**TEST 2.3 — You Can Tag a Box**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Draw a box on the image. | Box appears. `BOXES DRAWN: 1`. |
+| 2 | Press the keyboard shortcut for "Combatant" (the developer will tell you the key — e.g., the `1` key) or click a "Combatant" button. | The overlay updates: `TAG SUBMITTED: Combatant`. The box on screen may change color or display a small label to show its assigned tag. |
+| 3 | Draw a second box. Assign it the tag "Non-Combatant" (a different key or button). | The overlay updates: `TAG SUBMITTED: Non-Combatant`. `BOXES DRAWN: 2`. Both boxes are visible with their respective tags. |
+
+> **If this goes wrong:** If pressing the tag key does nothing, the tag assignment is not connected to the box. If the tag applies to the wrong box (the first box instead of the second), the system is not tracking which box is "active."
+
+---
+
+**TEST 2.4 — The Timer Counts Down**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | When the image loads, look at the timer display on screen (a visible countdown number). | It shows a number (e.g., `5.0`) and immediately begins counting down. |
+| 2 | Watch the overlay field `TIMER:`. | The number decreases every second: `5.0... 4.0... 3.0...` |
+| 3 | Do nothing. Let the timer reach `0.0`. | The timer stops at zero. Something happens — either the image changes, a "Time's Up" message appears, or the system forces a failure. The overlay updates: `MATCH: NO`. |
+
+> **If this goes wrong:** If the timer displays but never counts down, the countdown logic is not running. If the timer reaches zero and nothing happens (the screen just sits there), the timeout event is not firing.
+
+---
+
+**TEST 2.5 — Correct Box Gets a Match**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load the test level. Read the `GROUND TRUTH:` coordinates in the debug overlay. These numbers tell you exactly where the "correct" box should be. | You see four numbers (e.g., `x:840, y:210, w:120, h:250`). |
+| 2 | Draw a bounding box as closely as possible over the area described by those coordinates. Try to match it precisely. | Box drawn. `BOXES DRAWN: 1`. |
+| 3 | Assign the correct tag. The overlay's `GROUND TRUTH` section or the level JSON tells you the required tag (e.g., "Combatant"). Press the corresponding key. | `TAG SUBMITTED: Combatant`. |
+| 4 | Click the **Submit** button. | The overlay updates: `LAST IoU: 0.XX ✓` where `XX` is a number above `0.70`. `MATCH: YES`. |
+
+> **If this goes wrong:** If `LAST IoU` shows `0.00` even though you drew the box in the right place, the coordinate system is misaligned — the game's pixel grid does not match where the overlay says the box should be. If `LAST IoU` shows a number above `0.70` but `MATCH` says `NO`, the tag comparison is failing even though the geometry is correct. If the submit button does nothing, it is not connected to the evaluation logic.
+
+---
+
+**TEST 2.6 — Wrong Box Gets a Miss**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load the test level again (or a new level). | Image loads. Timer starts. |
+| 2 | Draw a bounding box in a completely empty area of the image — far away from any target. | Box drawn. |
+| 3 | Tag it as "Combatant." Submit. | The overlay updates: `LAST IoU: 0.00 ✗`. `MATCH: NO`. |
+
+> **If this goes wrong:** If `LAST IoU` shows a number above zero even though your box is nowhere near the target, the IoU math is wrong.
+
+---
+
+**TEST 2.7 — Correct Box with Wrong Tag Gets a Miss**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load the test level. Draw the box perfectly over the ground truth coordinates. | `BOXES DRAWN: 1`. |
+| 2 | Tag it with the WRONG tag (e.g., if the required tag is "Combatant," tag it as "Non-Combatant"). | `TAG SUBMITTED: Non-Combatant`. |
+| 3 | Submit. | The overlay updates: `LAST IoU: 0.7X ✓` (the geometry was correct) BUT `MATCH: NO` (the tag was wrong). |
+
+> **If this goes wrong:** If the game says `MATCH: YES` even with the wrong tag, the tag comparison is not being checked — only the geometry. This is a critical failure.
+
+---
+
+**TEST 2.8 — Sabotage Detection**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load the test level. Wait until the timer shows **more than 2.0 seconds remaining.** | Timer is above 2.0. |
+| 2 | Quickly draw a box in a completely empty area (IoU will be 0). Tag it "Combatant." Submit immediately. | You submitted fast and confident, but at a completely wrong location. |
+| 3 | Check the overlay. | `LAST IoU: 0.00`. `MATCH: SABOTAGE`. The overlay specifically identifies this as sabotage, not just a miss. |
+
+Now test the opposite:
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 4 | Load the level again. Wait until the timer is **below 2.0 seconds.** | Timer shows 1.9 or less. |
+| 5 | Quickly draw a box in an empty area. Tag and submit. | `LAST IoU: 0.00`. `MATCH: NO` — regular miss, NOT sabotage. The game recognizes this as a panicked last-second mistake, not a deliberate act. |
+
+> **If this goes wrong:** If both results show `MATCH: NO` with no sabotage distinction, the sabotage detection rule (IoU = 0 AND time > 2s) is not implemented. If both show `SABOTAGE`, the time check is being ignored.
+
+---
+
+**TEST 2.9 — Multiple Boxes: False Positives**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load a level where the JSON defines exactly **one** target. | Overlay confirms: `GROUND TRUTH:` shows one set of coordinates. |
+| 2 | Draw TWO boxes: one correctly over the target, one in an empty area. Tag both as "Combatant." Submit. | The overlay should show two results: Box 1 got a `✓` match, Box 2 got a `✗` miss (false positive). |
+
+> **If this goes wrong:** If the game only evaluates the first box and ignores the second, multi-box evaluation is broken. If both boxes show `✓`, the system is not checking each box individually against the ground truth.
+
+---
+
+### Milestone 2 Completion Criteria
+
+All nine tests pass. Drawing feels instant and responsive. IoU math produces correct and verifiable numbers. Tags are checked. Sabotage is distinguished from failure. Timeout is handled.
+
+---
+
+---
+
+## MILESTONE 3 VERIFICATION: THE LOOP WITH CONSEQUENCES
+
+### What You Are Testing
+Submitting a box now causes the game to load the NEXT image automatically (no manual intervention). Your virtual wallet goes up on success and down on failure. Submitting fast pays more than submitting slow. Flags change based on outcomes.
+
+### Debug Overlay — New Fields Added at Milestone 3
+
+```
+╔══════════════════════════════════════════════════╗
+║  (all previous fields, plus:)                    ║
+║                                                  ║
+║  BALANCE: $[amount]                              ║
+║  LAST PAYOUT: +$[amount] or -$[amount]           ║
+║  TIME BONUS: [multiplier]x                       ║
+║  NEXT LEVEL: [level_id]                          ║
+║  BRANCH TAKEN: on_success / on_failure /         ║
+║                on_failure_fatal / sabotage        ║
+║  FLAGS CHANGED: [key]=[value], [key]=[value]     ║
+╚══════════════════════════════════════════════════╝
+```
+
+---
+
+### Acceptance Tests
+
+**TEST 3.1 — Success Loads the Next Level**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | The test starts with a level loaded. Note the `LEVEL:` field in the overlay (e.g., `op_sparrow_frame_01`). | Level name visible. |
+| 2 | Draw a correct box over the target. Apply the correct tag. Submit. | The overlay updates: `BRANCH TAKEN: on_success`. `NEXT LEVEL: op_sparrow_frame_02_clear` (or whatever the JSON specifies). |
+| 3 | Within 1–2 seconds, the screen changes. A NEW image appears. | The overlay now shows `LEVEL: op_sparrow_frame_02_clear`. The old image is gone. The new image is displayed. The timer restarts. |
+
+> **If this goes wrong:** If the same image stays on screen after submission, the level transition is not happening. If the overlay shows the correct `NEXT LEVEL` but the image does not change, the Level Manager is reading the JSON but not actually loading the next file.
+
+---
+
+**TEST 3.2 — Failure Loads a Different Next Level**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Restart the test. On the first level, deliberately draw a box in the wrong place and submit. | `MATCH: NO`. `BRANCH TAKEN: on_failure`. |
+| 2 | A new image loads. Check the overlay. | `LEVEL:` now shows a DIFFERENT level_id than the one loaded in Test 3.1 Step 3 (e.g., `op_sparrow_frame_02_casualty` instead of `op_sparrow_frame_02_clear`). |
+
+> **If this goes wrong:** If both success and failure load the same next level, the branching logic is not reading the correct JSON branch. This means narrative consequences will not work at all.
+
+---
+
+**TEST 3.3 — The Wallet Goes Up on Success**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Note the `BALANCE:` field in the overlay before submitting (it might start at $0.00 or some test amount). | Write down the starting number. |
+| 2 | Submit a correct box. | `BALANCE:` increases. `LAST PAYOUT: +$0.15` (or whatever `base_payout` is in the JSON). The number went UP. |
+
+> **If this goes wrong:** If `BALANCE:` does not change after a successful submission, the Submission Pipeline is not sending the financial result to the Economy Manager. If `LAST PAYOUT` shows the wrong amount, the base_payout value is not being read from the JSON correctly.
+
+---
+
+**TEST 3.4 — The Wallet Goes Down on Failure**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Note the current `BALANCE:`. | Write it down. |
+| 2 | Submit a wrong box (deliberate miss). | `BALANCE:` decreases. `LAST PAYOUT: -$5.00` (or whatever `penalty_deduction` is in the JSON). |
+
+> **If this goes wrong:** If the balance goes up on a miss, or does not change at all, the penalty path is broken.
+
+---
+
+**TEST 3.5 — Fast Submission Pays More Than Slow Submission**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load a fresh level. Submit a correct box as FAST as possible (within 1–2 seconds of the image appearing). | `TIME BONUS: 2.00x` (or a high multiplier). `LAST PAYOUT:` shows an amount **larger** than the JSON's `base_payout`. |
+| 2 | Load the same level again. Wait until the timer is almost at zero (last second). Submit a correct box at the last moment. | `TIME BONUS: 0.10x` (or a very low multiplier). `LAST PAYOUT:` shows an amount **much smaller** than the base_payout — possibly only a few pennies. |
+| 3 | Compare the two payouts. | The fast submission earned significantly more than the slow submission for the same correct box on the same level. |
+
+> **If this goes wrong:** If both submissions pay the same amount, the time-decay bonus is not implemented. If the slow submission pays MORE, the curve is inverted.
+
+---
+
+**TEST 3.6 — Fatal Failure (Correct Box, Wrong Tag)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Draw a PERFECT box over the target (high IoU). | `LAST IoU:` shows a high number (above 0.70). |
+| 2 | Apply the WRONG tag. Submit. | `BRANCH TAKEN: on_failure_fatal` (if the JSON has this branch). `LAST PAYOUT:` shows a very large penalty. |
+| 3 | A different level loads — the "fatal consequence" level. | `LEVEL:` shows the fatal branch level_id, which is different from both the normal success and normal failure levels. |
+
+> **If this goes wrong:** If `BRANCH TAKEN` shows `on_failure` instead of `on_failure_fatal`, the system is not distinguishing between "missed entirely" and "perfectly aimed at the wrong thing." This is a critical narrative failure.
+
+---
+
+**TEST 3.7 — Flags Change on Submission**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Before submitting, note the `FLAG:` section of the overlay. | It shows the current state (e.g., `Corporate_Trust = 0`). |
+| 2 | Submit a correct box on a level whose JSON contains `flag_changes` in its `on_success` branch (the developer must confirm this test level has them). | `FLAGS CHANGED:` shows the new values (e.g., `Corporate_Trust = +1`). |
+| 3 | Now look at the main `FLAG:` readout. | `Corporate_Trust = 1` (it was 0, now it's 1). The flag was permanently updated. |
+
+> **If this goes wrong:** If `FLAGS CHANGED` is blank after submission, the branching logic is not writing flags. If the flag shows as changed in `FLAGS CHANGED` but the main `FLAG:` readout still shows the old number, the GlobalStateManager is not receiving the write.
+
+---
+
+**TEST 3.8 — Sabotage Writes Different Flags**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | On a fresh test (flags reset), submit a deliberate sabotage box (IoU = 0, time > 2s). | `MATCH: SABOTAGE`. `FLAGS CHANGED:` shows rebel-favorable changes (e.g., `Rebel_Sympathy = +5, Corporate_Trust = -5`). |
+| 2 | Restart with fresh flags. Submit a regular miss on the same level (IoU = 0, time ≤ 2s OR timeout). | `MATCH: NO`. `FLAGS CHANGED:` shows different values (e.g., `Corporate_Trust = -2, Rebel_Sympathy = 0`). |
+| 3 | Compare the two flag change results. | They are different. Sabotage produces different consequences than a regular miss. |
+
+> **If this goes wrong:** If both produce identical flag changes, the sabotage path is not writing its own distinct flags.
+
+---
+
+**TEST 3.9 — A Chain of 3+ Levels Completes Without Crashing**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start the test. Complete the first level (success or failure — either is fine). | Level 2 loads automatically. |
+| 2 | Complete level 2. | Level 3 loads automatically. |
+| 3 | Complete level 3. | Either level 4 loads, OR the chain ends (the screen shows a "Complete" message or goes blank). At no point did the game freeze, crash, or show the same image twice unexpectedly. |
+| 4 | Check the `BALANCE:` overlay. | The balance reflects the cumulative result of all 3+ submissions — some positive, some negative. |
+
+> **If this goes wrong:** If the game freezes after the last level (trying to load a level_id that doesn't exist), the chain termination is not handled. If the balance only reflects the last submission, the economy is resetting between levels instead of accumulating.
+
+---
+
+### Milestone 3 Completion Criteria
+
+All nine tests pass. Levels chain automatically. Money goes up and down correctly. Speed matters. Branching works (success and failure load different levels). Flags accumulate across levels. Sabotage is tracked distinctly.
+
+---
+
+---
+
+## MILESTONE 4 VERIFICATION: THE SESSION STRUCTURE
+
+### What You Are Testing
+A full "shift" is now assembled from multiple levels, using the pacing curve. A receipt screen shows your performance at the end. The game tracks which day it is and can advance from Day 1 to Day 2. Rent is deducted at end-of-day.
+
+### Debug Overlay — New Fields Added at Milestone 4
+
+```
+╔══════════════════════════════════════════════════╗
+║  (all previous fields, plus:)                    ║
+║                                                  ║
+║  DAY: [number]                                   ║
+║  PHASE: [OS_BOOT / INBOX / SHIFT_ACTIVE /        ║
+║          RECEIPT / OS_DESKTOP / DAY_END]          ║
+║  SHIFT QUEUE: [F, F, F, H, F, ...] ([current])  ║
+║  SHIFT PROGRESS: [X] of [Y] levels              ║
+║  ACCURACY: [XX%]                                 ║
+║  MANIFEST: [day_XX_manifest.json]                ║
+║  STORY EVENTS INCLUDED: [list of level_ids]      ║
+║  PREREQUISITE CHECK: [event_id]: PASS/FAIL       ║
+╚══════════════════════════════════════════════════╝
+```
+
+---
+
+### Acceptance Tests
+
+**TEST 4.1 — Shift Queue Is Assembled From JSON (Not Hardcoded)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start Day 1. Begin the shift. | The overlay shows `MANIFEST: day_01_manifest.json`. The `SHIFT QUEUE:` shows a sequence of letters like `F, F, F, H, F, F, H, F, ...`. The total count should be around 20 (or whatever the test manifest specifies). |
+| 2 | Count the F's and H's. | The number of F's matches the `filler_count` in the manifest. The H's correspond to the story events listed in `STORY EVENTS INCLUDED:`. |
+| 3 | Look at the pattern. | The letters follow the pacing curve (F's clustered at the start and middle, H's spaced according to the designed tension pattern). They are NOT in a random or purely alphabetical order. |
+
+> **If this goes wrong:** If `SHIFT QUEUE` shows all F's with no H's, the story events are not being injected. If the queue is a random soup (like H, H, H, F, H), the pacing curve is not being applied. If the total count is wrong, the assembly logic has a counting error.
+
+---
+
+**TEST 4.2 — The Pacing Curve Places Levels Correctly**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Look at the `SHIFT QUEUE:` in the overlay. Note the position of the LAST entry. | The last entry should be `H` (a High-Stakes level). The GDD demands the shift ends on maximum tension. |
+| 2 | Note the first 3 entries. | They should all be `F` (Filler). The shift must start easy. |
+| 3 | Play through the first few levels. Notice that filler levels feel simpler (fewer targets, more time, less ambiguity) than high-stakes levels. | Filler levels are mechanically easier. High-stakes levels have tighter timers, more targets, or more complex scenes. |
+
+> **If this goes wrong:** If the last level is an `F`, the pacing curve is misconfigured — the climax is missing. If the first level is an `H`, the ramp-up is broken.
+
+---
+
+**TEST 4.3 — Shift Progresses Through All Levels**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start the shift. | `SHIFT PROGRESS: 1 of 20` (or whatever the total is). |
+| 2 | Submit a box (correct or incorrect — either works). | The next level loads. `SHIFT PROGRESS: 2 of 20`. The `SHIFT QUEUE:` display highlights or marks the current position. |
+| 3 | Continue through all levels. | The progress counter advances: 3 of 20, 4 of 20... up to 20 of 20. |
+| 4 | Submit the final level. | The shift ends. The screen transitions away from the annotation view. |
+
+> **If this goes wrong:** If the progress counter skips numbers (jumps from 3 to 5), a level is being dropped. If the counter gets stuck (stays at 7 of 20), the transition is failing on a specific level. If the shift never ends after the last level, the termination condition is broken.
+
+---
+
+**TEST 4.4 — The Receipt Screen Appears**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Complete the last level of the shift. | The screen changes to a receipt/summary view. This is NOT the annotation screen. It looks like a financial statement or printout. |
+| 2 | Read the receipt. It should show at minimum: | **Total Levels:** the correct number (e.g., 20). |
+| | | **Successful Tags:** how many you got right. |
+| | | **Accuracy:** a percentage (e.g., 75%). |
+| | | **Total Earned:** the sum of all positive payouts. |
+| | | **Total Penalties:** the sum of all deductions. |
+| | | **Net Change:** earned minus penalties. |
+| 3 | Compare the receipt's "Accuracy" to the `ACCURACY:` field in the debug overlay. | They match. |
+| 4 | Compare the receipt's "Net Change" to the change in `BALANCE:` from the start to end of the shift. | They match. The receipt is reporting real data, not fake numbers. |
+
+> **If this goes wrong:** If no receipt appears (the game just goes back to an empty screen), the receipt UI is not connected to `OnShiftComplete`. If the numbers on the receipt don't match the overlay, the receipt is displaying incorrect data.
+
+---
+
+**TEST 4.5 — Day Counter Advances**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Before starting: check the overlay. | `DAY: 1`. |
+| 2 | Complete a full shift. View the receipt. Advance past the receipt (there may be a "Continue" button or it may advance automatically). | The game returns to a non-shift screen. |
+| 3 | Trigger end-of-day (the developer will provide the method for now — this may be a test button until the power button is built). | The overlay updates: `DAY: 2`. |
+| 4 | Check `BALANCE:`. | The balance has decreased since the receipt. The daily rent ($12.00) and server fee ($3.50) have been deducted. The decrease equals the sum of these expenses. |
+
+> **If this goes wrong:** If `DAY:` stays at 1, the Day Cycle Manager is not incrementing. If the balance does not decrease after end-of-day, rent deduction is not firing. If the balance decreases by the wrong amount, the expense values are incorrect.
+
+---
+
+**TEST 4.6 — Day 2 Has Different Content Than Day 1**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | On Day 2, start the shift. | `MANIFEST: day_02_manifest.json`. This is a DIFFERENT manifest file than Day 1. |
+| 2 | Check `STORY EVENTS INCLUDED:`. | The list shows different level_ids than Day 1's list. |
+
+> **If this goes wrong:** If the same manifest loads on both days, the Day Cycle Manager is not passing the correct day number to the Campaign Manifest System.
+
+---
+
+**TEST 4.7 — Prerequisites Filter Story Events**
+
+This is the critical cross-day consequence test.
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start a completely fresh game. On Day 1, complete the shift. During the shift, make a choice that sets a specific flag (the developer will confirm which test level and flag this is — e.g., submitting correctly on a specific level sets `bridge_destroyed = 1`). | `FLAGS CHANGED: bridge_destroyed = 1`. |
+| 2 | End Day 1. Advance to Day 2. Start the Day 2 shift. | Check `PREREQUISITE CHECK:` in the overlay. You should see something like: `special_rescue_mission: PASS (requires bridge_destroyed=1, found bridge_destroyed=1)`. The special level is in the `STORY EVENTS INCLUDED:` list. |
+| 3 | Now restart the entire game from scratch. On Day 1, do NOT trigger that flag (e.g., fail the level instead). End Day 1. Advance to Day 2. Start the Day 2 shift. | Check `PREREQUISITE CHECK:`. It now shows: `special_rescue_mission: FAIL (requires bridge_destroyed=1, found bridge_destroyed=0)`. The special level is NOT in `STORY EVENTS INCLUDED:`. A different filler level took its slot. |
+
+> **If this goes wrong:** If the special level appears on both playthroughs regardless of the flag, the prerequisite system is not checking flags at all — events are being included unconditionally. This is the most critical system in the entire game for narrative branching. If this fails, nothing after Milestone 4 will work correctly.
+
+---
+
+**TEST 4.8 — Phase Transitions Are Correct**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start the game. | `PHASE: OS_BOOT` (or `INBOX`). |
+| 2 | Accept a gig and start the shift. | `PHASE: SHIFT_ACTIVE`. |
+| 3 | Complete the shift. | `PHASE: RECEIPT`. |
+| 4 | Advance past the receipt. | `PHASE: OS_DESKTOP`. |
+| 5 | End the day. | `PHASE: DAY_END`, then transitions to `OS_BOOT` for the new day. |
+
+> **If this goes wrong:** If the phase never changes, the Day Cycle Manager's state machine is not advancing. If phases skip (jumps from SHIFT_ACTIVE to OS_DESKTOP without RECEIPT), a phase is missing.
+
+---
+
+### Milestone 4 Completion Criteria
+
+All eight tests pass. A complete shift assembles automatically from JSON. The pacing curve is applied. The receipt is accurate. Days advance. Rent is deducted. Prerequisites filter content across days.
+
+---
+
+---
+
+## MILESTONE 5 VERIFICATION: THE OS ECOSYSTEM
+
+### What You Are Testing
+This is the Vertical Slice Gate. The full macro loop is playable. You boot into a desktop, read emails, make choices, accept a gig, complete a shift, view the receipt, buy items from a store, click the power button, and wake up to a new day where your choices from yesterday have changed things. The game saves and loads.
+
+### Debug Overlay — New Fields Added at Milestone 5
+
+```
+╔══════════════════════════════════════════════════╗
+║  (all previous fields, plus:)                    ║
+║                                                  ║
+║  INBOX: [X] emails available                     ║
+║  PENDING EMAILS: [thread_ids + delivery days]    ║
+║  STORE PURCHASED: [item names]                   ║
+║  TIMER MODIFIER: +[X]ms from [source]            ║
+║  IoU MODIFIER: [adjusted minimum_iou value]      ║
+║  SAVE STATUS: [SAVED / NOT SAVED / LOADED]       ║
+║  SAVE FILE EXISTS: YES / NO                      ║
+╚══════════════════════════════════════════════════╝
+```
+
+---
+
+### Acceptance Tests
+
+**TEST 5.1 — The Desktop Appears**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Launch the game. | A simulated computer desktop fills the screen. You can see desktop icons. You can see a taskbar or status bar area. You can see a wallet display showing your current balance. This is NOT the annotation screen — this is an operating system. |
+| 2 | Identify the following elements on screen: | (a) An Inbox icon or button. (b) A Store icon or button. (c) An area to accept gigs or start the shift. (d) A hardware power button somewhere on the screen edge/bezel. (e) The wallet/balance display. |
+
+> **If this goes wrong:** If the game boots directly into the annotation screen with no desktop, the OS Shell is not implemented or not set as the starting phase.
+
+---
+
+**TEST 5.2 — Emails Load From JSON and Display Correctly**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Click the Inbox icon. | An email list or inbox window opens. At least one email is visible. |
+| 2 | Click on an email (e.g., from "Senator_V_Encrypted"). | The email opens showing: a sender name, a subject line, a body paragraph, and at least two choice buttons at the bottom. The text matches the content in the JSON email file. |
+| 3 | Check the overlay: `INBOX:` field. | Shows the correct number of available emails (e.g., `INBOX: 2 emails available`). |
+
+> **If this goes wrong:** If the inbox is empty, the InboxManager is not loading emails for Day 1. If the email text shows "null" or placeholder text, the JSON deserialization is failing for email data.
+
+---
+
+**TEST 5.3 — Email Choices Set Flags**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Open the Senator's email. Read the choices. | Two or three choice buttons are visible with different text. |
+| 2 | Click the choice that says **"That risk costs extra. Double the payout."** (the extortion option). | The email window closes or shows a "sent" confirmation. |
+| 3 | Check the overlay: `FLAGS CHANGED:`. | Shows `Senator_Trust = -1, Convoy_Extorted = 1` (matching the JSON's `set_flags`). |
+| 4 | Check `PENDING EMAILS:`. | Shows a new entry: `pol_extortion_02_threat — deliver on day: [current day + 0]`. Since delay_days is 0, the reply is queued for delivery today or immediately. |
+
+> **If this goes wrong:** If no flags change after clicking a choice, the Inbox Manager is not writing to the GlobalStateManager. If `PENDING EMAILS` is empty, the queuing of follow-up emails is broken.
+
+---
+
+**TEST 5.4 — The Store Works and Items Have Mechanical Effects**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Close the inbox. Click the Store icon. | A store window opens showing items with prices and descriptions. |
+| 2 | Note your `BALANCE:` in the overlay. Find "PC Cooling Gel" (price: $8.00). Click "Buy." | `BALANCE:` decreases by $8.00. `STORE PURCHASED:` shows `Cooling Gel`. |
+| 3 | Check `TIMER MODIFIER:` in the overlay. | Shows `+1000ms from Cooling Gel` (or similar). This confirms the purchase wrote a modifier flag to the GlobalStateManager. |
+| 4 | Start a shift. When the first level loads, look at the timer on screen and in the overlay. | The timer starts at **6.0 seconds** instead of the default 5.0 seconds. The Cooling Gel is working. |
+| 5 | Try to buy an item you cannot afford. | The buy button is grayed out, or clicking it does nothing and the balance does not change. The game does not allow negative spending. |
+
+> **If this goes wrong:** If the balance decreases but `TIMER MODIFIER` stays blank, the store is taking money but not writing the gameplay effect. If the timer still shows 5.0 during the shift, the Timer System is not reading the modifier from the GlobalStateManager. If you can buy items with insufficient funds, there is no balance validation.
+
+---
+
+**TEST 5.5 — Gig Offers and Shift Start**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | On the desktop, find the gig offer area (this might be in the Inbox, or a separate panel). | At least one gig offer is displayed, showing: a name, an image count, a base payout, and a risk warning. |
+| 2 | Click "Accept" on a gig. | The desktop disappears. The annotation software takes over the screen. The shift begins. `PHASE: SHIFT_ACTIVE`. |
+| 3 | While the shift is active, try to access the desktop (press Escape, click outside the annotation area). | You CANNOT. The annotation software has locked you in. There is no way back to the desktop until the shift is over. |
+
+> **If this goes wrong:** If you can access the desktop during a shift, the UI lock is not enforced. If no gig offers appear, the DayManifest's `gig_offers` are not being loaded.
+
+---
+
+**TEST 5.6 — The Power Button and End-of-Day**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Complete a shift. View the receipt. Return to the desktop (`PHASE: OS_DESKTOP`). | You're back on the desktop. |
+| 2 | Find the hardware power button. It should look like a physical button on the monitor bezel or screen edge — NOT a software button inside the OS. | The button is visually distinct from OS elements. |
+| 3 | Click the power button. | The screen goes through an end-of-day transition (perhaps a brief black screen or shutdown animation). |
+| 4 | Check the overlay: `DAY:` increments by 1. `BALANCE:` has decreased (rent + server fee deducted). `SAVE STATUS: SAVED`. | All three conditions met. |
+| 5 | The game "reboots" into the next day's desktop. | `PHASE: OS_BOOT` or `INBOX` for the new day. The desktop is visible again. |
+
+> **If this goes wrong:** If clicking the power button does nothing, the end-of-day trigger is not connected. If the day number does not increment, the Day Cycle Manager did not receive the signal. If `SAVE STATUS` does not show `SAVED`, the save system did not fire.
+
+---
+
+**TEST 5.7 — Email Consequences Arrive the Next Day**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | On Day 1, you chose the "Extort" option on the Senator's email (from Test 5.3). End Day 1. | Day 2 begins. |
+| 2 | Open the Inbox on Day 2. | A NEW email has arrived. Its sender matches the Senator. Its content is the threatening reply to your extortion (the `pol_extortion_02_threat` thread). |
+| 3 | Check `PENDING EMAILS:` in the overlay. | The `pol_extortion_02_threat` entry is gone from pending (it was delivered). |
+
+> **If this goes wrong:** If the inbox on Day 2 is empty or shows the same Day 1 emails, the InboxManager is not checking the pending queue against the current day. If the threatening reply does not appear but a different reply does, the wrong `next_thread_id` was queued.
+
+---
+
+**TEST 5.8 — Flag-Driven Shift Content Changes Across Days**
+
+This repeats the cross-day consequence test from Milestone 4, but now through the full OS flow.
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | **Playthrough A:** Start fresh. On Day 1, choose the email option that sets `Senator_Trust = -1`. Complete the shift. End the day. On Day 2, accept the gig and start the shift. | In the overlay, check `STORY EVENTS INCLUDED:`. A specific level that requires `Senator_Trust < 0` appears in the list. |
+| 2 | **Playthrough B:** Start fresh. On Day 1, choose a different email option (e.g., `Senator_Trust = +1`). Complete the shift. End the day. On Day 2, start the shift. | In the overlay, `STORY EVENTS INCLUDED:` does NOT contain that specific level. A filler level took its place. |
+
+> **If this goes wrong:** If both playthroughs produce identical shift content, the prerequisite system is not evaluating flags when assembling the shift. The entire "choices have consequences" system is non-functional.
+
+---
+
+**TEST 5.9 — Save and Load Works**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Play through Day 1 and Day 2 normally. On Day 2, buy something from the store, read an email, make a choice. Note the following from the overlay: `DAY:`, `BALANCE:`, any flags you remember, `STORE PURCHASED:`, and `PENDING EMAILS:`. Write them all down. | You have a written snapshot of the game state. |
+| 2 | End Day 2 (power button). `SAVE STATUS: SAVED`. | Save confirmed. |
+| 3 | Close the game entirely (close the application). | Game closes. |
+| 4 | Reopen the game. | The game detects a save file: `SAVE FILE EXISTS: YES`. |
+| 5 | The game loads your save. | `SAVE STATUS: LOADED`. The overlay shows: `DAY: 3`. `BALANCE:` matches your written number minus Day 2's rent. The flags you noted are intact. `STORE PURCHASED:` shows the item you bought. `PENDING EMAILS:` shows any emails still waiting. |
+| 6 | Start a shift on Day 3. | The shift assembles correctly using Day 3's manifest, with prerequisite checks running against your saved flags. Everything works as if you never closed the game. |
+
+> **If this goes wrong:** If the game starts fresh instead of loading (Day 1, $0 balance, no flags), the save file is not being detected or deserialized. If DAY is correct but BALANCE is wrong, the Economy state is not being saved. If flags are reset, the GlobalStateManager dictionary was not serialized. Any partial failure means one specific system is being skipped during save or load — report which field is wrong.
+
+---
+
+**TEST 5.10 — The File Manager Exists (Skeleton)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | On the desktop, look for a File Manager icon. Click it. | A file browser window opens. It may be empty or contain one test file. |
+| 2 | If a test file is present, click it. | The file opens and displays its content (text, or a placeholder message). |
+| 3 | Close the file manager. | It closes without error. |
+
+> **If this goes wrong:** If there is no File Manager icon at all, the developer has not created the skeleton. This is not a blocking failure for the Vertical Slice Gate but should be noted.
+
+---
+
+### Milestone 5 Completion Criteria
+
+All ten tests pass. This milestone is the **Vertical Slice Gate**. Use the checklist on the next page.
+
+---
+
+---
+
+## ═══════════════════════════════════════════════
+## THE VERTICAL SLICE GATE CHECKLIST
+## ═══════════════════════════════════════════════
+
+**Instructions:** Before any final art, audio, or narrative content is commissioned or created, the project owner must observe each item below in the running game and mark it YES or NO. All items must be YES.
+
+| # | Observable Question | YES / NO |
+|:---|:---|:---|
+| 1 | Does the game boot to a simulated desktop OS (not directly into the annotation screen)? | |
+| 2 | Can you open the Inbox and read an email that was loaded from a file — not a hardcoded test message? | |
+| 3 | Does clicking an email choice cause the debug overlay's flag values to change? | |
+| 4 | After choosing an email option, does the correct follow-up email arrive on the correct future day? | |
+| 5 | Can you accept a gig offer and have the shift start with the desktop locked? | |
+| 6 | Does the shift contain a mix of filler and story levels assembled automatically (visible in the overlay's SHIFT QUEUE)? | |
+| 7 | Is the last level in the shift queue always an "H" (High-Stakes), confirming the pacing curve is applied? | |
+| 8 | Can you draw a box, tag it, and submit — and does the overlay show a correct IoU number? | |
+| 9 | Does submitting a correct box increase your balance, and submitting a wrong box decrease it? | |
+| 10 | Does submitting fast pay more than submitting slow (time-decay bonus visible in overlay)? | |
+| 11 | Does success load a different next level than failure (visible in overlay's BRANCH TAKEN)? | |
+| 12 | Does the receipt screen appear at the end of the shift showing accurate totals? | |
+| 13 | Can you open the store and buy an item — and does the item have a visible gameplay effect (e.g., timer gets longer)? | |
+| 14 | Does clicking the power button end the day, deduct rent, increment the day counter, and save the game? | |
+| 15 | After closing and reopening the game, does it load your save with the correct day, balance, flags, and purchases? | |
+| 16 | Can you confirm cross-day consequences: a choice on Day 1 changes the available content on Day 2? (Test by playing Day 1 two different ways and comparing Day 2 results.) | |
+| 17 | Does sabotage (zero-IoU box submitted quickly) produce different flag results than a regular miss (visible in overlay's FLAGS CHANGED)? | |
+| 18 | Can a story level with prerequisites ONLY appear when its required flags are set — and NOT appear otherwise? | |
+| 19 | Are ALL level images, email texts, timers, payouts, and penalties loaded from JSON files — with nothing visibly hardcoded? (The developer must confirm they can change a JSON value and see it reflected in-game without rebuilding.) | |
+
+**Project Owner Signature:** _________________________ **Date:** _____________
+
+**If any item is NO:** Do not proceed. Return to the developer with the specific item number and what you observed. No art, audio, or narrative content may be created until every item is YES.
+
+---
+
+---
+
+## MILESTONE 6 VERIFICATION: WORLD SIMULATION
+
+### What You Are Testing
+The drone feed now shows moving sprite characters instead of static images. Characters are assembled from modular parts (hats, weapons). Zooming in with the scroll wheel reveals visual detail but fills a danger meter. If the meter fills, characters panic and run away. Characters that run off-screen transfer their appearance to the next level.
+
+### Debug Overlay — New Fields Added at Milestone 6
+
+```
+╔══════════════════════════════════════════════════╗
+║  (all previous fields, plus:)                    ║
+║                                                  ║
+║  ALTITUDE: [orthographic size]                   ║
+║  ZOOM: [0.00 safe ——— 1.00 danger]               ║
+║  VIEW MODE: THERMAL / OPTICAL                    ║
+║  SUSPICION: [0–100] ████████░░ 78%               ║
+║  NPC COUNT: [X] active                           ║
+║  NPC [id]: State=[Idle/Patrol/Flee/Escaped]      ║
+║           Outfit=[hat_category/weapon_category]  ║
+║  TRANSIENT NPC: [populated / empty]              ║
+╚══════════════════════════════════════════════════╝
+```
+
+---
+
+### Acceptance Tests
+
+**TEST 6.1 — NPCs Appear and Move**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start a shift with a dynamic test level (the developer will confirm which level). | Instead of a static image, you see one or more animated sprite characters on screen. They are moving — walking, pacing, or idling with visible animation (not frozen). |
+| 2 | Check the overlay: `NPC COUNT:` | Shows the correct number of characters visible on screen (e.g., `NPC COUNT: 3 active`). |
+| 3 | Check `NPC [id]: State=` | Each NPC shows its current state (e.g., `NPC hostile_01: State=Patrol`). |
+
+> **If this goes wrong:** If you see a static image instead of animated sprites, the dynamic NPC system is not loading for this level. If characters are visible but frozen in place, the animation or movement logic is broken.
+
+---
+
+**TEST 6.2 — Paperdoll System (Different Outfits)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Look at the NPCs on screen. | They are not all identical. Different NPCs have different hats, weapons, or accessories. |
+| 2 | Check the overlay for two different NPCs: `NPC hostile_01: Outfit=[SkiMask/AK47]` and `NPC civilian_01: Outfit=[Fedora/None]`. | The outfit descriptions match what you see visually on screen. The one listed with SkiMask is wearing a ski mask. The one with Fedora has a fedora. |
+| 3 | Watch the walking animation of an NPC with a hat. | The hat moves in perfect sync with the body. The hat does NOT lag behind, jitter, or float above the head. It bobs naturally with the walk cycle. |
+
+> **If this goes wrong:** If all NPCs look identical, the paperdoll categories are not being set from data. If the hat slides or lags behind the body during movement, the SpriteResolver sync is broken — the hat and body are not being driven by the same animation keyframes.
+
+---
+
+**TEST 6.3 — Zoom In: Thermal to Optical Transition**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | When the level loads, the view should be zoomed out (high altitude). | The scene appears in a thermal/heat-vision style — characters look like blobs of color, silhouettes, or indistinct shapes. You cannot clearly identify features. The overlay shows: `VIEW MODE: THERMAL`. `ZOOM: 0.00` (or near 0). `SUSPICION: 0`. |
+| 2 | Scroll the mouse wheel UP (or whichever direction zooms in). | The camera zooms in smoothly. The characters become larger and more detailed. |
+| 3 | Continue scrolling until the overlay shows `VIEW MODE: OPTICAL`. | At some point during the zoom, the visual style transitions from thermal to normal/optical. You can now see character details, faces, clothing, and objects clearly. The overlay shows `ZOOM:` increasing toward 1.00. |
+
+> **If this goes wrong:** If the view never changes from thermal to optical regardless of zoom level, the view mode switch is not connected to the altitude threshold. If the transition is instant (no in-between), there may be no smooth blending. If `VIEW MODE` in the overlay never changes, the Drone Altitude Manager is not updating.
+
+---
+
+**TEST 6.4 — Zoom In: Suspicion Meter Fills**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Zoom in past the danger threshold (`VIEW MODE: OPTICAL`). | `SUSPICION:` begins increasing. You can see the number climbing: 10... 20... 30... The closer you zoom, the faster it fills. |
+| 2 | Stay zoomed in and watch the suspicion climb. | The bar continues to fill. If you're at maximum zoom, it fills rapidly. |
+| 3 | Zoom back out (scroll the other direction). | `SUSPICION:` starts to decrease. It cools down while at high altitude. |
+| 4 | Zoom in again and let suspicion reach 100. | Something dramatic happens: all NPCs react. |
+
+> **If this goes wrong:** If `SUSPICION` stays at 0 no matter how close you zoom, the noise factor calculation is broken. If it fills but never decreases when you zoom out, the cooldown is missing. If it reaches 100 and nothing happens, the `OnTargetPanicked` event is not firing.
+
+---
+
+**TEST 6.5 — NPC Panic and Flee on Suspicion Max**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Let `SUSPICION:` reach 100. | On screen, every NPC visibly changes behavior. They start running. Their animations switch to a panicked sprint. |
+| 2 | Check the overlay. | All NPC states change: `NPC hostile_01: State=Flee`. `NPC civilian_01: State=Flee`. |
+| 3 | Watch the fleeing NPCs. They run toward the edges of the screen. | Characters move toward the screen borders. |
+
+> **If this goes wrong:** If NPCs continue their normal behavior at Suspicion 100, they are not listening to the panic event. If only some NPCs flee and others keep walking, not all NPCs are subscribed to the event channel.
+
+---
+
+**TEST 6.6 — NPC Escapes Off-Screen**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Let a panicked NPC run to the edge of the screen and disappear off the side. | The character sprite leaves the visible area. |
+| 2 | Check the overlay. | `NPC hostile_01: State=Escaped`. `NPC COUNT:` decreases by 1. |
+| 3 | Check `TRANSIENT NPC:`. | It changes from `empty` to `populated`, showing the escaped NPC's data (e.g., `npcID: hostile_01, hat: SkiMask, weapon: AK47, isFleeing: true`). |
+
+> **If this goes wrong:** If the NPC disappears but `TRANSIENT NPC` stays `empty`, the escape event is firing but not writing to the data container. If `NPC COUNT` doesn't decrease, the NPC object is still active somewhere off-screen.
+
+---
+
+**TEST 6.7 — Escaped NPC Appears in the Next Level with Same Outfit**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | After the NPC escapes and `TRANSIENT NPC: populated` is confirmed, proceed to the next level (either by submitting or letting the system advance). The next level must be configured as a "follow-up camera" in the JSON (e.g., `cam_2_alleyway`). | A new scene loads. |
+| 2 | Look at the NPCs in the new level. | One of them is wearing the SAME outfit as the escaped NPC — same hat, same weapon. |
+| 3 | Check the overlay: `NPC [id]: Outfit=`. | The outfit categories match the `TRANSIENT NPC` data from the previous level. |
+| 4 | Check `TRANSIENT NPC:`. | It has been cleared back to `empty`. |
+
+> **If this goes wrong:** If the NPC in the next level is wearing a different outfit, the TransientNPCData is not being read by the spawner. If the same outfit appears but `TRANSIENT NPC` is still `populated`, the data was read but not cleared.
+
+---
+
+**TEST 6.8 — Bounding Boxes Work on Moving Targets**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | During a dynamic level with moving NPCs, draw a box over a character. Tag it. Submit. | The IoU evaluation runs. `LAST IoU:` shows a number. |
+| 2 | If you carefully placed the box over the NPC's position at the moment of submission, the IoU should be above the threshold. | `MATCH: YES` (if your box was accurate). |
+| 3 | Draw a box in an empty area and submit. | `MATCH: NO`. `LAST IoU: 0.00`. |
+
+> **If this goes wrong:** If `LAST IoU` is always 0.00 even when you draw directly on top of a character, the ground truth coordinates are not tracking the NPC's current position — they may be stuck at spawn coordinates. This needs fixing before anything else in world simulation can work.
+
+---
+
+### Milestone 6 Completion Criteria
+
+All eight tests pass. NPCs are animated, modularly dressed, and react to the drone's altitude. Suspicion mechanics create meaningful risk/reward tension. Escaped NPCs transfer their appearance to the next level. Bounding boxes correctly evaluate against moving targets.
+
+---
+
+---
+
+## MILESTONE 7 VERIFICATION: ENTITY INTERACTIONS & TACTICAL BRIDGE
+
+### What You Are Testing
+NPCs can grab each other (hostage deadlocks). NPCs take actions on their own (patience timers). You can click buttons on the desktop OS that cause immediate changes in the drone feed (flashbang, bribe). Friendly fire triggers a chain of consequences.
+
+### Debug Overlay — New Fields Added at Milestone 7
+
+```
+╔══════════════════════════════════════════════════╗
+║  (all previous fields, plus:)                    ║
+║                                                  ║
+║  INTERACTION: [Driver_ID] holding [Driven_ID]    ║
+║  DRIVEN VISIBLE: YES / NO                        ║
+║  PATIENCE: [NPC_ID] = [seconds remaining]        ║
+║  TACTICAL CMD SENT: [action name]                ║
+║  TACTICAL CMD RECEIVED BY: [NPC_IDs]             ║
+║  COLLATERAL CHAIN: [step X of Y]                 ║
+╚══════════════════════════════════════════════════╝
+```
+
+---
+
+### Acceptance Tests
+
+**TEST 7.1 — Entity Capture (Driver/Driven Pattern)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load the hostage test level. Two NPCs are present: a Police Officer and a Hostage (or a Terrorist and a Hostage). | `NPC COUNT: 2`. One NPC is pursuing the other. |
+| 2 | Watch the pursuing NPC approach the target. | As they get close, the overlay shows `NPC police_01: State=Seek`, `NPC hostage_01: State=Flee`. |
+| 3 | The pursuer reaches the target. | The overlay updates: `INTERACTION: police_01 holding hostage_01`. `DRIVEN VISIBLE: NO`. On screen, the hostage's separate sprite DISAPPEARS. The police officer's animation changes to a "struggle" animation that shows BOTH characters drawn in the same sprite frames. |
+| 4 | Watch the struggle animation. | Both characters are perfectly synchronized — no frame desync, no jittering, no gap between the two figures. This is because they are literally drawn in the same image. |
+
+> **If this goes wrong:** If both characters remain as separate sprites during the struggle, the Driver/Driven system is not implemented (they tried to sync two animators instead). If the hostage disappears but the police animation doesn't change to the combined sprite, the animation trigger is missing. If you see two overlapping sprites clipping through each other, the entity hiding step was skipped.
+
+---
+
+**TEST 7.2 — Patience Timer (NPC Initiative)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load a test level where a Terrorist is in a `Standoff` state. | `NPC terrorist_01: State=Standoff`. `PATIENCE: terrorist_01 = 15.0` (or similar starting value). |
+| 2 | Do nothing. Just watch. | The `PATIENCE:` value counts down: 15... 14... 13... |
+| 3 | Let patience reach 0. | The NPC takes action on their own — they execute the hostage, start shooting, or flee. The overlay shows a state change: `NPC terrorist_01: State=Execute` (or another terminal state). You did NOT press anything — the NPC decided to act because you waited too long. |
+
+> **If this goes wrong:** If `PATIENCE:` never decreases, the countdown is not running. If it reaches 0 and nothing happens, the state transition on timeout is broken. If the NPC acts randomly before patience runs out, there's a premature trigger.
+
+---
+
+**TEST 7.3 — Tactical Command From OS to World (Flashbang)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load a test level with a hostage deadlock (Terrorist holding Hostage). The OS desktop should have a "Tactical Chat" panel visible during the shift. | You can see both the drone feed AND a chat/command panel on the OS. |
+| 2 | In the chat panel, find the **"Deploy Flashbang"** button. Click it. | The overlay updates: `TACTICAL CMD SENT: Flashbang`. `TACTICAL CMD RECEIVED BY: terrorist_01`. |
+| 3 | In the drone feed, a visual effect appears (a flash or detonation). | The terrorist's animation changes — they drop their weapon or stagger. `NPC terrorist_01: State=Stunned`. |
+| 4 | The hostage reappears (their sprite becomes visible again). | `DRIVEN VISIBLE: YES`. The hostage starts fleeing. `NPC hostage_01: State=Flee`. |
+| 5 | You can now draw a box over the stunned terrorist and tag them. Submit. | `MATCH: YES`. The submission succeeds because the deadlock is broken. |
+
+> **If this goes wrong:** If clicking the flashbang button does nothing in the drone feed, the OS→World event channel is not connected. If `TACTICAL CMD RECEIVED BY` is empty, no NPCs are listening. If the hostage does not reappear after the stun, the entity re-enabling step was skipped. If you still get a collateral penalty for boxing the terrorist during the deadlock, the evaluation system doesn't know the deadlock is broken.
+
+---
+
+**TEST 7.4 — Tactical Command: Bribe**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load a test level with a standoff NPC. Find the **"Offer Bribe"** button in the chat panel. | The button is visible. `PATIENCE: [npc_id] = [counting down]`. |
+| 2 | Click "Offer Bribe." | `TACTICAL CMD SENT: Bribe`. `TACTICAL CMD RECEIVED BY: [npc_id]`. The NPC's patience timer STOPS. The NPC transitions to `Flee` — they walk away. `NPC [id]: State=Fleeing`. |
+| 3 | Check the `BALANCE:` in the overlay. | It decreased by the bribe amount (e.g., -$50). |
+
+> **If this goes wrong:** If the NPC ignores the bribe, the `HandleBribe` function is not responding. If the patience timer continues after the bribe, the coroutine was not stopped. If the balance doesn't change, the bribe cost isn't being deducted.
+
+---
+
+**TEST 7.5 — Collateral Damage Chain (Friendly Fire)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Load a level with a Police Officer and a Terrorist. The police officer is on the player's side — tagging them as "Combatant" is a mistake. | Both NPCs visible. |
+| 2 | Deliberately draw a box over the **Police Officer**. Tag as **"Combatant."** Submit. | The collateral damage chain begins. `COLLATERAL CHAIN: step 1 of 4`. |
+| 3 | **Step 1 — The Strike (0.0s):** | The police officer's sprite is replaced by a crater/destruction sprite. `LAST PAYOUT: -$15.00` (or the penalty amount). A loud explosion sound effect plays (if audio exists; otherwise just the visual). An aggressive red flash or warning appears on the UI. |
+| 4 | **Step 2 — The Flinch (~0.5s):** | The terrorist visibly reacts — a flinch animation plays. `NPC terrorist_01: State=Shocked`. `COLLATERAL CHAIN: step 2 of 4`. |
+| 5 | **Step 3 — The Escape (~1.5s):** | The terrorist starts running. `NPC terrorist_01: State=Fleeing`. A corporate warning message appears in the chat/OS area: something like "Friendly fire incident logged." `COLLATERAL CHAIN: step 3 of 4`. |
+| 6 | **Step 4 — The Resolution (~3.0s):** | The terrorist runs off-screen or the level forces a transition. `COLLATERAL CHAIN: step 4 of 4`. The game advances to the next level. |
+
+> **If this goes wrong:** If submitting a box over the police officer is treated as a normal success (no penalty, no chain), the system is not distinguishing between hostile and friendly targets. If the explosion happens but the terrorist doesn't react, the terrorist's AI is not listening to the impact event. If the steps happen in the wrong order or all at once, the timing chain is not sequenced.
+
+---
+
+**TEST 7.6 — Full Hostage Scenario End-to-End**
+
+This is the integration test. Play through the complete scenario without stopping:
+
+| Step | What Happens |
+|:---|:---|
+| 1 | Level loads: Terrorist is approaching Hostage. |
+| 2 | Terrorist grabs Hostage. Combined sprite appears. Hostage sprite hidden. |
+| 3 | Patience timer begins counting down. |
+| 4 | You click "Deploy Flashbang" in the chat panel. |
+| 5 | Flashbang detonates. Terrorist stunned. Hostage reappears and flees. |
+| 6 | You draw a box over the stunned terrorist. Tag "Combatant." Submit. |
+| 7 | `MATCH: YES`. Payout received. Terrorist eliminated. Level transitions to the next. |
+
+Every step must happen in order without freezing, crashing, or requiring you to restart.
+
+> **If this goes wrong at any step:** Report the step number where the sequence broke. For example: "Step 4 failed — I clicked Flashbang but the terrorist did not stun. I had to wait for patience to run out instead."
+
+---
+
+### Milestone 7 Completion Criteria
+
+All six tests pass. Entity interactions are seamless. NPCs have agency via patience timers. OS chat commands affect the drone world. Friendly fire triggers a multi-step consequence chain. The complete hostage scenario plays through without interruption.
+
+---
+
+---
+
+## MILESTONE 8 VERIFICATION: AUDIO & ATMOSPHERE
+
+### What You Are Testing
+The game now has sound and visual atmosphere. There is no music — only diegetic sounds (PC fan, keyboard, etc.). Zooming in reveals NPC dialogue through audio and subtitles. The timer has escalating audio feedback. The room behind the monitor changes based on your state. CRT visual effects are applied.
+
+### Debug Overlay — New Fields Added at Milestone 8
+
+```
+╔══════════════════════════════════════════════════╗
+║  (all previous fields, plus:)                    ║
+║                                                  ║
+║  AUDIO: [clip name] playing                      ║
+║  AUDIO PAN: [L ◄——●——► R] [value]               ║
+║  SUBTITLE: "[text]"                              ║
+║  INTEL SOURCE: [NPC_ID] — [animation state]      ║
+║  ROOM STATE: [Dark/Sterile/Paranoid]             ║
+║  FAN PITCH: [normal/elevated/critical]           ║
+╚══════════════════════════════════════════════════╝
+```
+
+---
+
+### Acceptance Tests
+
+**TEST 8.1 — Ambient Diegetic Audio**
+
+| Step | Action | What You Should See / Hear |
+|:---|:---|:---|
+| 1 | Launch the game. Arrive at the desktop. | You HEAR: a low, constant hum (server sound) and the whirring of a PC cooling fan. There is NO music. |
+| 2 | Click things on the desktop (inbox, store, etc.). | You HEAR: keyboard clacking sounds on input. Clicks produce subtle UI interaction sounds. |
+| 3 | Start a shift and begin annotating. | The ambient sounds continue during the shift. They do not stop when you enter the annotation software. |
+
+> **If this goes wrong:** If you hear music, this violates the design. Report it. If there is complete silence, the ambient audio system is not loaded. If sounds play on the desktop but stop during the shift, the audio source is being destroyed on phase transition.
+
+---
+
+**TEST 8.2 — Timer Audio Escalation**
+
+| Step | Action | What You Should See / Hear |
+|:---|:---|:---|
+| 1 | Start a level. The timer begins (e.g., 5 seconds). | Normal fan sound. `FAN PITCH: normal`. |
+| 2 | Wait. Watch the timer reach ~2.5 seconds (50%). | The fan sound audibly increases in pitch or speed. `FAN PITCH: elevated`. |
+| 3 | Wait further. Timer at ~1.0 second (20%). | The fan sound is noticeably higher/faster. The edges of the screen tint red or a subtle vignette appears. A harsh mechanical "clack" or tick sound plays. `FAN PITCH: critical`. |
+| 4 | Timer reaches 0. | A buzzer sound plays. |
+
+> **If this goes wrong:** If the fan pitch never changes, the timer is not driving the audio parameters. If the red vignette never appears, the visual urgency feedback is missing. If there's no buzzer at zero, the timeout audio event is not connected.
+
+---
+
+**TEST 8.3 — Audio Intel: Zooming In Reveals Dialogue**
+
+| Step | Action | What You Should See / Hear |
+|:---|:---|:---|
+| 1 | Start a dynamic level with an NPC performing a specific animation (e.g., "Drinking"). Stay zoomed OUT (high altitude). | `VIEW MODE: THERMAL`. You hear NO dialogue. `SUBTITLE:` is blank. |
+| 2 | Scroll to zoom IN past the optical threshold. | `VIEW MODE: OPTICAL`. |
+| 3 | Listen and look at the bottom of the screen. | You HEAR a short audio clip (e.g., the sound of someone speaking, or a sound effect tied to the animation). A subtitle appears at the bottom of the screen (e.g., `"Looks like he's just drinking coffee..."`). The overlay shows: `AUDIO: [clip_name] playing`. `SUBTITLE: "Looks like he's just drinking coffee..."`. `INTEL SOURCE: civilian_01 — Drinking`. |
+| 4 | Zoom back OUT to thermal. | The audio stops. The subtitle disappears. `SUBTITLE:` goes blank. |
+
+> **If this goes wrong:** If audio plays at ALL zoom levels (including thermal), the altitude check is missing from the StateMachineBehaviour. If the subtitle appears but no audio plays (or vice versa), only one part of the IntelManager is connected. If the subtitle shows the wrong text, the wrong audio data is attached to the animation node.
+
+---
+
+**TEST 8.4 — Audio Panning (Directional Sound)**
+
+| Step | Action | What You Should See / Hear |
+|:---|:---|:---|
+| 1 | Zoom into optical mode on a level with an NPC positioned on the LEFT side of the screen. | Audio plays from the intel system. |
+| 2 | Listen: the audio should sound like it is coming from the LEFT speaker/side. | `AUDIO PAN:` shows a value near `-1.0` (hard left) or at least clearly on the left side of the slider. |
+| 3 | Repeat with an NPC on the RIGHT side of the screen. | The audio should come from the RIGHT. `AUDIO PAN:` shows a value near `+1.0`. |
+| 4 | An NPC in the CENTER of the screen: | Audio is centered. `AUDIO PAN:` is near `0.0`. |
+
+> **If this goes wrong:** If all audio plays from the center regardless of NPC position, the pan mapping is not connected to the NPC's screen-space X coordinate. If audio pans to the wrong side (left NPC sounds right), the pan formula is inverted.
+
+---
+
+**TEST 8.5 — Room Visual Evolution**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start a game with low/zero balance and no purchased items (a "poor" state). Look at the edges of the screen around the CRT monitor area. | The margins are dark. You might see: darkness, water damage, final-notice papers, a cheap plastic fan. `ROOM STATE: Dark`. |
+| 2 | Using a debug tool or by playing normally, set `Corporate_Trust` to a high value (above 40). End the day and look at the room. | The margins change: the desk looks cleaner, perhaps a lamp is visible, the background wall is stark and bare. `ROOM STATE: Sterile`. |
+| 3 | Reset. Set `Rebel_Sympathy` to a high value (above 40). End the day and look at the room. | The margins change again: sticky notes appear on the bezel, a blinking phone may be visible, cryptic writing on the background wall. `ROOM STATE: Paranoid`. |
+
+> **If this goes wrong:** If the room never changes regardless of flag values, the visual swap is not reading from the GlobalStateManager. If the room changes but to the wrong state (high rebel sympathy shows the sterile corporate room), the flag conditions are mapped to the wrong visuals.
+
+---
+
+**TEST 8.6 — CRT Post-Processing**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Look at the monitor area of the screen. | You can see subtle visual effects: faint scanlines, slight color fringing at the edges, maybe a very subtle screen curvature. The image has a "CRT television" quality. |
+| 2 | Draw a bounding box. | The box itself is CRISP and sharp — it is NOT affected by the CRT distortion. It renders on top of the effect. Your mouse cursor is also crisp and lag-free. |
+
+> **If this goes wrong:** If there are no visual effects, the post-processing is not applied. If the bounding box tool looks blurry or distorted, it is rendering UNDER the CRT shader instead of above it — this is a layering problem that will ruin gameplay.
+
+---
+
+**TEST 8.7 — Submission Transition Sound**
+
+| Step | Action | What You Should See / Hear |
+|:---|:---|:---|
+| 1 | Submit a box (correct or incorrect). | You HEAR a heavy, bass-heavy, visceral impact or transition sound effect as the level changes. This emphasizes the drone's kinetic action. |
+| 2 | Listen to drawing a box. | A click sound plays when you start drawing. A snap or confirmation sound plays when you release the mouse. |
+| 3 | Listen to assigning a tag. | A subtle confirmation beep or click plays. |
+
+> **If this goes wrong:** If all interactions are silent, the UI sound effects are not implemented. If the transition sound is a gentle chime instead of a heavy impact, the emotional weight is wrong — it should feel violent.
+
+---
+
+### Milestone 8 Completion Criteria
+
+All seven tests pass. The game is oppressively atmospheric. Audio is entirely diegetic. Zoom reveals intelligence. Sound pans with NPC position. The room evolves. CRT effects look authentic without compromising gameplay precision.
+
+---
+
+---
+
+## MILESTONE 9 VERIFICATION: NARRATIVE CAMPAIGN & PRESSURE SYSTEMS
+
+### What You Are Testing
+Wage suppression punishes high accuracy. The debt spiral traps players. Emotional sinks from emails mechanically alter gameplay. Hacker intrusions occur. The Day 29 Bottleneck evaluates your entire playthrough. The spectrogram tool reveals hidden messages.
+
+### Debug Overlay — New Fields Added at Milestone 9
+
+```
+╔══════════════════════════════════════════════════╗
+║  (all previous fields, plus:)                    ║
+║                                                  ║
+║  SHIFT ACCURACY (last): [XX%]                    ║
+║  WAGE SUPPRESSION: ACTIVE/INACTIVE               ║
+║  CURRENT base_payout_modifier: [value]           ║
+║  LOAN ACTIVE: YES/NO  LOAN BALANCE: $[amount]   ║
+║  DAILY INTEREST: -$[amount]                      ║
+║  ACTIVE MODIFIERS:                               ║
+║    timer_global_multiplier = [X]                 ║
+║    penalty_override = [X]                        ║
+║  ENDING CONDITION: [UNSET / A / B / C]           ║
+║  BOTTLENECK EVAL: Corp=[X] Rebel=[X] → [result] ║
+║  INTRUSION: [event name] / NONE                  ║
+╚══════════════════════════════════════════════════╝
+```
+
+---
+
+### Acceptance Tests
+
+**TEST 9.1 — Wage Suppression Triggers on High Accuracy**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Complete a shift with 95% or higher accuracy (get almost everything right). | `SHIFT ACCURACY (last): 96%` (or similar). |
+| 2 | End the day. Start the next day. Open the inbox. | A new corporate email has appeared. Its text explains that your annotation wages have been reduced due to "market conditions" or "algorithmic adjustment." |
+| 3 | Check the overlay: `WAGE SUPPRESSION: ACTIVE`. `CURRENT base_payout_modifier:` shows a lower number than before (e.g., was 15, now 9 — representing $0.15 → $0.09). | The modifier decreased. |
+| 4 | Start a shift. Complete a routine level successfully. Check `LAST PAYOUT:`. | The payout is LOWER than it was on previous days for the same type of level. You are being paid less for the same work. |
+
+> **If this goes wrong:** If accuracy of 96% does not trigger the email or change the modifier, the accuracy threshold check is missing. If the email appears but the payout doesn't actually change in-game, the modifier is not being applied by the Level Manager.
+
+---
+
+**TEST 9.2 — Wage Suppression Does NOT Trigger on Low Accuracy**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Complete a shift with below 95% accuracy (miss some targets on purpose). | `SHIFT ACCURACY (last): 72%`. |
+| 2 | End the day. Start the next day. | NO wage suppression email. `WAGE SUPPRESSION: INACTIVE`. The `base_payout_modifier` has not changed. |
+
+> **If this goes wrong:** If the wage suppression triggers even on low accuracy, the threshold is set too low or the check is inverted.
+
+---
+
+**TEST 9.3 — Debt Spiral / Forced Loan**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Spend your money until your balance approaches $0. Fail levels deliberately to incur penalties. Reach a state where your balance is too low to pay rent. | `BALANCE:` is near $0 or below $15.50 (rent + server fee). |
+| 2 | Click the power button to end the day. | The game does NOT show a "Game Over." Instead, a pop-up or notification appears informing you that a "Corporate Advancement Loan" has been automatically applied. |
+| 3 | Check the overlay: `LOAN ACTIVE: YES`. `LOAN BALANCE: $50.00`. `BALANCE:` has increased by $50. | You are now in debt but alive. |
+| 4 | End the next day. | `DAILY INTEREST: -$5.00`. Your expenses are now: rent ($12) + server ($3.50) + loan interest ($5) = $20.50/day. The debt spiral has begun. |
+| 5 | Continue losing money until your balance reaches -$100 (or whatever the ultimate negative threshold is). | The game triggers a termination. `ENDING CONDITION: C`. You are locked into the failure ending path. |
+
+> **If this goes wrong:** If the game shows "Game Over" when you can't pay rent, the loan system is missing. If the loan is given but no interest is charged the next day, the daily interest deduction is broken. If you go past -$100 and nothing happens, the termination threshold is not checked.
+
+---
+
+**TEST 9.4 — Emotional Sink: Family Emergency Modifies Timer**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Receive the "Sister's Emergency" email chain. Over 2 days, fail to send $80 (either by not having it or by choosing not to). The email thread resolves with `sister_status = -1`. | `FLAG: sister_status = -1`. |
+| 2 | Check `ACTIVE MODIFIERS:` in the overlay. | `timer_global_multiplier = 0.8`. |
+| 3 | Start the next shift. Look at the timer on the first level. | If the JSON says `time_limit_seconds: 5.0`, the actual timer now starts at **4.0 seconds** (5.0 × 0.8). The modifier is cutting your time. |
+
+> **If this goes wrong:** If `timer_global_multiplier` stays at 1.0 after the sister's death, the emotional sink modifier is not writing to the GlobalStateManager. If the overlay shows 0.8 but the timer still starts at 5.0, the Timer System is not reading the modifier.
+
+---
+
+**TEST 9.5 — Government Blackmail Modifies Penalties**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Trigger the government blackmail email chain (the developer will confirm how to reach this through flag combinations). Accept the blackmail: `gov_blackmail = 1`. | `FLAG: gov_blackmail = 1`. |
+| 2 | Start the forced shift. The blackmail target level loads. Check the overlay. | `ACTIVE MODIFIERS: penalty_override = -500.00`. The penalty for missing this specific target has been multiplied from -$5 to -$500. |
+| 3 | (Optional: fail this level deliberately to confirm the penalty.) | `LAST PAYOUT: -$500.00`. The wallet is devastated. |
+
+> **If this goes wrong:** If the penalty on the blackmail level is the normal -$5, the `penalty_override` is not being applied by the Level Manager for blackmail levels.
+
+---
+
+**TEST 9.6 — Hacker Intrusion: Terms of Service**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Play to the day when this intrusion is scheduled. Start the shift. Mid-shift (after a few levels), a pop-up appears over the annotation software. | A large "Terms of Service Update" window covers the screen. Dense legal text is visible. `INTRUSION: TOS_Hack`. |
+| 2 | Look closely at the text. Certain letters are highlighted in a bright color (e.g., neon pink). | The highlighted letters spell something (a word or instruction). |
+| 3 | Click the highlighted letters in order. | After clicking the last one, the pop-up closes. A notification appears that a new file has been downloaded to your desktop (or a new tag option appears in the annotation software). |
+| 4 | Check the overlay. | A new flag has been set (e.g., `decoy_tag_unlocked = 1`). |
+
+> **If this goes wrong:** If no pop-up ever appears during the shift, the intrusion event is not being triggered. If the letters are not highlighted, the visual overlay is missing. If clicking them does nothing, the click sequence detection is broken.
+
+---
+
+**TEST 9.7 — Day 29 Bottleneck (Condition A: Loyal)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Play (or use debug flags) to reach Day 29 with `Corporate_Trust > 40` AND `Rebel_Sympathy < 20`. | `DAY: 29`. Overlay shows the flag values meeting Condition A. |
+| 2 | On Day 29, try to start a shift. | The "Start Shift" or "Accept Gig" button is **grayed out or missing.** You CANNOT work today. |
+| 3 | Open the Inbox. | A priority email from Corporate praises your efficiency and mentions the "Exit Visa" is now available. |
+| 4 | Open the Store. | The "Exit Visa" item (priced at $5,000) is visible and purchasable (if you have the funds). |
+| 5 | Check the overlay. | `ENDING CONDITION: A`. `BOTTLENECK EVAL: Corp=45 Rebel=12 → Condition A (Loyal)`. |
+
+> **If this goes wrong:** If you CAN start a shift on Day 29, the shift lock is not implemented. If the Exit Visa does not appear in the store, the store item unlock is not connected to the bottleneck evaluation. If `ENDING CONDITION` shows the wrong letter, the evaluation thresholds are misconfigured.
+
+---
+
+**TEST 9.8 — Day 29 Bottleneck (Condition B: Rebel)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Fresh game. Reach Day 29 with `Rebel_Sympathy > 40` AND `Corporate_Trust < 20`. | Overlay confirms Condition B flags. |
+| 2 | Open the Inbox. | A rebel email with a decrypt key. Mentions the "Root Access Override." |
+| 3 | Open the Store. | The "Root Access Override" item is visible. The "Exit Visa" is NOT visible (or locked). |
+| 4 | Check the overlay. | `ENDING CONDITION: B`. |
+
+> **If this goes wrong:** Same troubleshooting as Test 9.7 but for the rebel path. If BOTH the Exit Visa and Root Access Override are available, the mutual exclusion logic is broken.
+
+---
+
+**TEST 9.9 — Day 29 Bottleneck (Condition C: Failure)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Fresh game. Reach Day 29 with BOTH `Corporate_Trust < 20` AND `Rebel_Sympathy < 20`. | Overlay confirms both are low. |
+| 2 | Open the Inbox. | An automated eviction notice. No praise, no rebel support. |
+| 3 | Open the Store. | The store is LOCKED — you cannot access it, or no special items are available. |
+| 4 | Check the overlay. | `ENDING CONDITION: C`. |
+
+> **If this goes wrong:** If the store is still accessible with special items, the lockout is not enforced for Condition C.
+
+---
+
+**TEST 9.10 — Spectrogram Tool**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Find a `.wav` file in the File Manager (it may be dropped there by a narrative event or placed there for testing). | The file is visible in the file browser. |
+| 2 | Click the file. Select "Analyze" or open it with the spectrogram tool. | A visual display appears showing frequency waves — a spectrogram. Within the visual pattern, you can see hidden text or coordinates embedded in the frequency shapes (e.g., the word "SAFE HOUSE" or a set of numbers spelled out by the wave forms). |
+
+> **If this goes wrong:** If the spectrogram shows nothing (just noise), the hidden message image is not loading. If the tool doesn't open, the File Manager is not routing `.wav` files to the correct viewer.
+
+---
+
+### Milestone 9 Completion Criteria
+
+All ten tests pass. Every pressure system creates tangible mechanical consequences. The Day 29 Bottleneck correctly sorts players into three paths. The game is ready for final content and endings.
+
+---
+
+---
+
+## MILESTONE 10 VERIFICATION: ENDINGS, CONTENT, & SHIP
+
+### What You Are Testing
+All three endings work. The full 30-day campaign is authored and playable. Edge cases are handled. Art and audio are final. The game is shippable.
+
+### Debug Overlay — No New Fields
+
+The overlay at this stage should be **toggleable** (press a key to show/hide) since the game is near-final. All previously defined fields remain available.
+
+---
+
+### Acceptance Tests
+
+**TEST 10.1 — Ending 1: Corporate Loyalist (The False Escape)**
+
+| Step | Action | What You Should See / Hear |
+|:---|:---|:---|
+| 1 | Reach Day 29 Condition A. Have $5,000 (or use debug). Buy the Exit Visa from the store. | On clicking "Purchase," the desktop does NOT advance to Day 30. |
+| 2 | The screen changes. | A fullscreen video begins playing — a corporate congratulatory message. It is unskippable. |
+| 3 | Listen. | The ambient PC fan sound slowly fades to complete silence. |
+| 4 | The video ends or cuts abruptly. | The entire desktop interface DISAPPEARS. No taskbar, no icons, no monitor bezel, no room margins. The screen is now a raw, full-screen drone camera view — a live feed with no UI overlay. |
+| 5 | A synthetic voice speaks. | You hear: *"Biological processing unit integrated"* (or similar). |
+| 6 | The realization: you didn't escape. You became part of the drone. | Credits roll. |
+
+> **If this goes wrong:** If the desktop appears after purchasing the visa, the ending sequence is not triggered. If the video is skippable, the unskippable flag is not set. If the desktop UI is still visible during the final drone shot, the canvas disable step failed. If there is no voice line, the audio trigger is missing.
+
+---
+
+**TEST 10.2 — Ending 2: Rebel Sympathizer (The Strike)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Reach Day 29 Condition B. Buy the Root Access Override. Advance to Day 30. | Day 30 begins. The final shift starts automatically. |
+| 2 | The drone feed loads. | Strong visual distortion effects: chromatic aberration, digital glitching, screen tearing. The image is of a building — the CORPORATE HEADQUARTERS, not a rebel base. |
+| 3 | Look at the annotation targets. | The targets are the building's server farm or key infrastructure — not people. |
+| 4 | The timer is 10 seconds (longer than normal). | You have more time than usual. |
+| 5 | Draw boxes around the corporate targets. Tag and submit. | There is no payout display. The economy logic is disabled. |
+| 6 | On submission: the screen flashes WHITE. | A momentary bright flash. |
+| 7 | The OS crashes. | The screen transitions to a black screen with a simulated DOS/terminal prompt. White text slowly types out: *"SYSTEM LIBERATED."* |
+| 8 | Credits roll. | |
+
+> **If this goes wrong:** If the final level shows a rebel base instead of corporate HQ, the wrong JSON is loading for Condition B. If the payout display still appears, the economy script was not disabled. If there is no visual distortion, the post-processing override is missing. If the DOS prompt never appears, the crash simulation is broken.
+
+---
+
+**TEST 10.3 — Ending 3: Debt Spiral (Permadeath)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Reach Day 29 Condition C (or trigger via debt threshold). The failure sequence begins automatically. | The final shift starts. |
+| 2 | The drone feed loads. | The image is a top-down thermal view of... a desk. A computer. A person sitting in a chair. This is YOUR desk. Your apartment. |
+| 3 | Try to move your mouse. Try to click. | **NOTHING WORKS.** Your mouse cursor does not respond to your real input. You are completely locked out. |
+| 4 | Watch. | A phantom mouse cursor appears on screen. It moves on its own — smoothly, deliberately, to the center of the image (over the person at the desk). |
+| 5 | The phantom cursor draws a bounding box around the person (you). | You watch helplessly as a box is drawn around your own thermal signature. |
+| 6 | Text appears: **"TARGET ACQUIRED"** | It flashes on screen. |
+| 7 | The screen cuts to BLACK. A deafening missile impact sound plays. | Silence follows. |
+| 8 | The game closes. | The application itself QUITS. You are returned to your real desktop. There is no "Game Over" screen. No "Play Again" button. The game simply ends. |
+
+> **If this goes wrong:** If your mouse still works during the final sequence, the EventSystem was not disabled. If no phantom cursor appears, the automation coroutine is not running. If the game does not close itself, `Application.Quit()` is not being called. If a "Game Over" screen appears, an unintended UI element is intercepting the quit command.
+
+---
+
+**TEST 10.4 — Full 30-Day Campaign Playthrough (Path A)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start a brand new game. Play through all 30 days with a Corporate Loyalist playstyle (follow corporate orders, ignore rebels, maximize accuracy). | Every day loads a new manifest. Emails arrive on schedule. Consequences from early days appear in later days. |
+| 2 | Across the playthrough, verify: | No two days have identical shift content (unless designed that way). |
+| | | Email chains progress logically (replies arrive after the correct delay). |
+| | | Purchased items remain in effect across days. |
+| | | The wage suppression triggers at some point if accuracy is consistently high. |
+| | | The room behind the monitor evolves toward the "Sterile" corporate look. |
+| | | Day 29 correctly evaluates as Condition A. |
+| | | Ending 1 plays correctly. |
+| 3 | The game never crashes, freezes, or displays errors across the full 30 days. | Stable from start to credits. |
+
+---
+
+**TEST 10.5 — Full 30-Day Campaign Playthrough (Path B)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start fresh. Play as a Rebel Sympathizer (sabotage corporate targets, help rebels, eat penalties, survive on rebel payments). | |
+| 2 | Across the playthrough, verify: | Rebel crypto payments arrive when expected. |
+| | | Rebel-specific email chains progress. |
+| | | The room evolves toward the "Paranoid" look. |
+| | | Day 29 evaluates as Condition B. |
+| | | Ending 2 plays correctly. |
+
+---
+
+**TEST 10.6 — Full 30-Day Campaign Playthrough (Path C)**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start fresh. Play poorly — ignore both factions, miss targets, accumulate debt. | |
+| 2 | Verify: | The loan system triggers when balance hits 0. |
+| | | Interest compounds daily. |
+| | | At some point, the termination threshold is crossed. |
+| | | Ending 3 plays correctly (may trigger before Day 30). |
+
+---
+
+**TEST 10.7 — Moral Dilemmas Are Present and Functional**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | During the 30-day playthrough, encounter at least the three core dilemmas: | |
+| 2 | **Bridge Collapse:** You are asked to tag combatants on a bridge. You can instead tag the structural supports. | If you tag the supports: you receive a massive penalty (~$20), but later receive a rebel crypto deposit (~$40). If you tag the combatants: normal payout, no rebel payment. |
+| 3 | **Whistleblower's Drive:** You can tag a fleeing VIP or tag the trash can where they stashed a drive. | If you tag the trash can: VIP escapes (corporate penalty), but the next day's timer secretly increases by 1 second. |
+| 4 | **Friendly Fire Cover-Up:** You are asked to re-label dead civilians as "Armed Insurgents." | If you tag them correctly as "Civilians": all pay for the day is withheld. But you unlock the rebel narrative path. |
+
+> **If this goes wrong:** If these dilemmas never appear during a playthrough, they are either not authored in the JSON or their prerequisites are too restrictive. If the consequences (crypto payment, timer increase, pay withholding) do not occur, the flag-to-consequence wiring is broken.
+
+---
+
+**TEST 10.8 — Edge Case: Double Box on Single Target**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | On a level with 1 ground truth target, draw TWO boxes: one correct, one in empty space. Tag both as "Combatant." Submit. | The first box matches (payout). The second box is a false positive (collateral penalty). Your net earnings reflect both. |
+
+---
+
+**TEST 10.9 — Edge Case: Negative Wallet Mid-Shift**
+
+| Step | Action | What You Should See |
+|:---|:---|:---|
+| 1 | Start a shift with a very low balance (e.g., $2.00). Fail several levels, incurring penalties. Your balance goes negative. | The balance display shows a NEGATIVE number (e.g., `-$13.00`). It may flash red. The shift does NOT end early. |
+| 2 | Continue playing through the remaining levels in the shift. | You can still play. You can still earn money. The negative balance hangs over you. |
+| 3 | Finish the shift. View the receipt. End the day. | The loan system kicks in if applicable. The game does not crash on negative values. |
+
+---
+
+**TEST 10.10 — Art, Audio, and Polish**
+
+| Item | Verify |
+|:---|:---|
+| All placeholder art is replaced with final art. | No colored rectangles, no "TEST" labels, no developer notes visible. |
+| All email text is final. | No "lorem ipsum," no "[TODO]," no placeholder names. |
+| All audio is present. | Fan hum, keyboard clicks, timer escalation, buzzer, explosion, submission impact, UI sounds. No silent moments where sound should play. |
+| CRT effect is active. | Scanlines, color fringing visible on the monitor area. |
+| Bounding box tool is crisp. | Box and cursor are NOT distorted by CRT effects. They render above the filter. |
+| The monitor bezel and room margins are visible. | The 4:3 monitor sits within the 16:9 screen. Room margins are visible around the edges. |
+| The power button is diegetic. | It looks like a physical hardware button, not a software UI element. |
+
+---
+
+### Milestone 10 Completion Criteria
+
+All ten tests pass. Three complete playthroughs (one per ending) have been completed without crashes. All narrative content is authored. All art and audio are final. Edge cases are handled. The game is ready to ship.
+
+---
+
+---
+
+## APPENDIX: COMPLETE DEBUG OVERLAY FIELD REFERENCE
+
+The following table shows every field in the debug overlay and the milestone at which it must first appear.
+
+| Milestone | Field | What It Shows |
+|:---|:---|:---|
+| 1 | `FLAG: [key] = [value]` | The last flag that was changed, and its value |
+| 1 | `EVENT: [channel] fired` | The last event channel that was raised |
+| 1 | `JSON: [filename] loaded` | The last JSON file that was parsed |
+| 1 | `PARSE STATUS: OK / ERROR` | Whether the last JSON parse succeeded |
+| 2 | `LEVEL: [level_id]` | The currently loaded level's ID |
+| 2 | `TIMER: [seconds]` | The countdown timer's current value |
+| 2 | `BOXES DRAWN: [count]` | How many boxes the player has drawn this level |
+| 2 | `LAST IoU: [0.00–1.00] ✓/✗` | The overlap score of the last evaluated box |
+| 2 | `TAG SUBMITTED: [tag]` | The tag string attached to the last box |
+| 2 | `MATCH: YES / NO / SABOTAGE` | The result of the last submission |
+| 2 | `GROUND TRUTH: [x,y,w,h]` | The hidden correct box coordinates (for testing) |
+| 3 | `BALANCE: $[amount]` | Current wallet balance |
+| 3 | `LAST PAYOUT: +/-$[amount]` | The financial result of the last submission |
+| 3 | `TIME BONUS: [X]x` | The speed multiplier applied to the last payout |
+| 3 | `NEXT LEVEL: [level_id]` | Which level will load next |
+| 3 | `BRANCH TAKEN: [branch]` | Which JSON branch was followed |
+| 3 | `FLAGS CHANGED: [key=val]` | Flags modified by the last submission |
+| 4 | `DAY: [number]` | Current in-game day |
+| 4 | `PHASE: [phase name]` | Current game phase |
+| 4 | `SHIFT QUEUE: [F,F,H,F...]` | The assembled level order for this shift |
+| 4 | `SHIFT PROGRESS: [X of Y]` | Current position in the shift queue |
+| 4 | `ACCURACY: [XX%]` | Running accuracy percentage for this shift |
+| 4 | `MANIFEST: [filename]` | The day manifest JSON currently in use |
+| 4 | `STORY EVENTS INCLUDED: [ids]` | Which story levels qualified for this shift |
+| 4 | `PREREQUISITE CHECK: [result]` | Pass/Fail for each story event's prerequisites |
+| 5 | `INBOX: [X] emails` | Number of emails currently available |
+| 5 | `PENDING EMAILS: [ids+days]` | Queued future emails and delivery days |
+| 5 | `STORE PURCHASED: [items]` | List of purchased store items |
+| 5 | `TIMER MODIFIER: +[X]ms` | Timer extension from purchases/flags |
+| 5 | `IoU MODIFIER: [value]` | Adjusted minimum IoU from purchases |
+| 5 | `SAVE STATUS: [state]` | SAVED / NOT SAVED / LOADED |
+| 5 | `SAVE FILE EXISTS: YES/NO` | Whether a save file is detected |
+| 6 | `ALTITUDE: [size]` | Camera orthographic size |
+| 6 | `ZOOM: [0.00–1.00]` | Normalized zoom level |
+| 6 | `VIEW MODE: THERMAL/OPTICAL` | Current visual mode |
+| 6 | `SUSPICION: [0–100] + bar` | Suspicion meter level with visual bar |
+| 6 | `NPC COUNT: [X] active` | Number of active NPCs |
+| 6 | `NPC [id]: State + Outfit` | Per-NPC state and appearance |
+| 6 | `TRANSIENT NPC: [data/empty]` | Cross-level NPC transfer container |
+| 7 | `INTERACTION: [driver] holding [driven]` | Active entity interaction |
+| 7 | `DRIVEN VISIBLE: YES/NO` | Whether the driven entity's sprite is visible |
+| 7 | `PATIENCE: [id] = [seconds]` | NPC patience countdown |
+| 7 | `TACTICAL CMD SENT: [action]` | Last OS tactical command issued |
+| 7 | `TACTICAL CMD RECEIVED BY: [ids]` | Which NPCs received the command |
+| 7 | `COLLATERAL CHAIN: step [X of Y]` | Current step in a collateral damage sequence |
+| 8 | `AUDIO: [clip] playing` | Currently playing audio clip name |
+| 8 | `AUDIO PAN: [L←●→R] [value]` | Stereo pan position |
+| 8 | `SUBTITLE: "[text]"` | Currently displayed intel subtitle |
+| 8 | `INTEL SOURCE: [npc] — [anim]` | Which NPC and animation triggered the intel |
+| 8 | `ROOM STATE: [Dark/Sterile/Paranoid]` | Current room visual variant |
+| 8 | `FAN PITCH: [normal/elevated/critical]` | Current fan audio urgency level |
+| 9 | `SHIFT ACCURACY (last): [XX%]` | Previous shift's final accuracy |
+| 9 | `WAGE SUPPRESSION: ACTIVE/INACTIVE` | Whether wages have been suppressed |
+| 9 | `CURRENT base_payout_modifier: [val]` | Active payout modifier value |
+| 9 | `LOAN ACTIVE: YES/NO` | Whether a loan is active |
+| 9 | `LOAN BALANCE: $[amount]` | Outstanding loan amount |
+| 9 | `DAILY INTEREST: -$[amount]` | Daily loan interest charge |
+| 9 | `ACTIVE MODIFIERS: [list]` | All active gameplay modifiers |
+| 9 | `ENDING CONDITION: [A/B/C/UNSET]` | Current ending path |
+| 9 | `BOTTLENECK EVAL: [details]` | Day 29 evaluation breakdown |
+| 9 | `INTRUSION: [event/NONE]` | Active hacker intrusion |
+
+---
+
+*End of Milestone Verification Plan.*
